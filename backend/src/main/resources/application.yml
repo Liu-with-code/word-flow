@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: wordflow-backend
+  datasource:
+    # 通过环境变量注入；本地默认 root/root 与开发配置保持一致
+    url: ${DB_URL:jdbc:mysql://localhost:3306/wordflow?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # 开发期打印 SQL；生产环境请删除或改为 SLF4J 级别
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+
+# JWT 配置：secret 长度必须 >= 32 字节（HS256）
+jwt:
+  secret: ${JWT_SECRET:wordflow-dev-secret-change-me-0123456789abcdef}
+  expire-hours: ${JWT_EXPIRE_HOURS:168}
+
+# AI 配置：provider=mock 时不依赖任何外部服务，可离线跑通全流程；
+# provider=openai 时通过环境变量 AI_API_KEY 注入密钥
+ai:
+  provider: ${AI_PROVIDER:openai}
+  base-url: ${AI_BASE_URL:https://api.deepseek.com}
+  api-key: ${AI_API_KEY:}
+  model: ${AI_MODEL:deepseek-v4-flash}
+  timeout-seconds: ${AI_TIMEOUT_SECONDS:60}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.wordflow: info
+
+# 本地上传目录（相对 backend 运行目录）；头像等静态资源通过 /uploads/** 访问
+wordflow:
+  upload-dir: ${WORDFLOW_UPLOAD_DIR:uploads}

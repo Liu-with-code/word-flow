@@ -1,0 +1,10 @@
+# 构建上下文精简，避免把本地依赖/数据打进镜像
+**/node_modules
+**/target
+**/dist
+**/.git
+**/.idea
+**/*.log
+backend/uploads
+database/raw
+.env

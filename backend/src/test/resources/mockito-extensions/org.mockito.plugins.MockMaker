@@ -1,0 +1,2 @@
+# 使用 subclass mock maker：不依赖 JVM 自附加（inline 模式在低内存/受限环境会失败）
+mock-maker-subclass

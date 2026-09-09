@@ -1,0 +1,30 @@
+# Java / Maven
+backend/target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node
+frontend/node_modules/
+frontend/dist/
+*.local
+
+# 大数据文件（第三方词库原始数据，不进仓库；服务器上单独保留）
+database/raw/
+
+# 运行时上传文件
+backend/uploads/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+Thumbs.db
+.DS_Store
+
+# 本地敏感配置
+application-local.yml
+.env
+.env.*

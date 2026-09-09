@@ -1,0 +1,100 @@
+/* =============================================================
+ * WordFlow 全局样式与设计变量
+ * 设计依据：Material Design 3 的间距/层级 + Element Plus 色彩体系
+ * ============================================================= */
+:root {
+  --wfl-primary: #4f46e5;
+  --wfl-primary-light: #6366f1;
+  --wfl-primary-bg: #eef2ff;
+  --wfl-success: #16a34a;
+  --wfl-warning: #d97706;
+  --wfl-danger: #dc2626;
+  --wfl-bg: #f5f6fb;
+  --wfl-card: #ffffff;
+  --wfl-text: #1f2333;
+  --wfl-text-secondary: #6b7280;
+  --wfl-border: #e5e7eb;
+  --wfl-radius: 14px;
+  --wfl-shadow: 0 6px 24px rgba(31, 35, 51, 0.06);
+
+  /* Element Plus 主题色覆盖 */
+  --el-color-primary: #4f46e5;
+  --el-color-primary-light-3: #818cf8;
+  --el-color-primary-light-5: #a5b4fc;
+  --el-color-primary-light-7: #c7d2fe;
+  --el-color-primary-light-8: #dbeafe;
+  --el-color-primary-light-9: #eef2ff;
+  --el-color-primary-dark-2: #4338ca;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  background: var(--wfl-bg);
+  color: var(--wfl-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.wfl-card {
+  background: var(--wfl-card);
+  border-radius: var(--wfl-radius);
+  box-shadow: var(--wfl-shadow);
+  padding: 20px;
+}
+
+.wfl-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.wfl-page-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.wfl-page-subtitle {
+  margin: 0 0 20px;
+  color: var(--wfl-text-secondary);
+  font-size: 14px;
+}
+
+.wfl-gradient-text {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.wfl-flex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* 弹窗/消息框在小屏上不超过可视宽度 */
+.el-dialog,
+.el-message-box {
+  max-width: calc(100vw - 24px);
+}
+
+@media (max-width: 768px) {
+  .wfl-page {
+    padding: 16px 12px 88px;
+  }
+}
