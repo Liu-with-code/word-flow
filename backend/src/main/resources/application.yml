@@ -17,8 +17,8 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    # 开发期打印 SQL；生产环境请删除或改为 SLF4J 级别
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 生产不打印 SQL，避免高并发下刷日志占用 CPU/IO
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
   global-config:
     banner: false
     db-config:

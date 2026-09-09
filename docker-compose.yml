@@ -44,7 +44,9 @@ services:
       AI_MODEL: ${AI_MODEL:-deepseek-v4-flash}
       AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-60}
       WORDFLOW_UPLOAD_DIR: /app/uploads
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m"
       TZ: Asia/Shanghai
+    mem_limit: 384m
     volumes:
       - uploads:/app/uploads
     depends_on:

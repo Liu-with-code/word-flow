@@ -13,6 +13,7 @@ frontend/dist/
 database/raw/
 
 # 运行时上传文件
+uploads/
 backend/uploads/
 
 # IDE
