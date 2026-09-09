@@ -49,3 +49,4 @@ logging:
 # 本地上传目录（相对 backend 运行目录）；头像等静态资源通过 /uploads/** 访问
 wordflow:
   upload-dir: ${WORDFLOW_UPLOAD_DIR:uploads}
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}

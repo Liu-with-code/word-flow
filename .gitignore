@@ -29,3 +29,7 @@ Thumbs.db
 application-local.yml
 .env
 .env.*
+
+# 服务器专用部署文件（不进公开仓库，服务器本地保留）
+docker-compose.server.yml
+docs/DEPLOY-SERVER.md
