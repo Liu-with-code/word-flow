@@ -1,23 +1,26 @@
 <template>
   <div class="splash-page">
-    <div class="glow glow-a" />
-    <div class="glow glow-b" />
+    <span class="glow glow-a" />
+    <span class="glow glow-b" />
 
     <div class="splash-content">
-      <div class="logo-shell">
-        <img class="logo" src="/photo/logo-icon.png" alt="WordFlow" />
+      <div class="brand-stage" :class="{ in: logoIn }">
+        <div class="logo-shell">
+          <img class="logo" src="/photo/logo-icon.png" alt="WordFlow" />
+        </div>
+        <h1 class="brand">
+          <span class="brand-en">WordFlow</span>
+          <span class="brand-cn">词流</span>
+        </h1>
       </div>
-      <h1 class="brand">
-        <span class="brand-en">WordFlow</span>
-        <span class="brand-cn">词流</span>
-      </h1>
-      <p class="slogan">把词说出口，记忆便有了回响</p>
+
+      <p class="slogan" :class="{ in: sloganIn }">让词句经由你，抵达记忆</p>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
@@ -25,18 +28,39 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
+const logoIn = ref(false)
+const sloganIn = ref(false)
+let timers: number[] = []
+
 onMounted(() => {
-  // 渐进展示约 2.6 秒后进入首页或登录页
-  setTimeout(() => {
-    const next = typeof route.query.next === 'string' ? route.query.next : ''
-    const target = userStore.token
-      ? '/'
-      : next && next.startsWith('/')
-        ? next
-        : '/login'
-    router.replace(target)
-  }, 2600)
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  if (reduced) {
+    logoIn.value = true
+    sloganIn.value = true
+    timers.push(window.setTimeout(goNext, 1400))
+    return
+  }
+
+  // 第一幕：Logo 与名称浮现；第二幕：标语浮现
+  timers.push(window.setTimeout(() => (logoIn.value = true), 120))
+  timers.push(window.setTimeout(() => (sloganIn.value = true), 950))
+  timers.push(window.setTimeout(goNext, 2600))
 })
+
+onBeforeUnmount(() => {
+  timers.forEach((t) => window.clearTimeout(t))
+})
+
+function goNext() {
+  const next = typeof route.query.next === 'string' ? route.query.next : ''
+  const target = userStore.token
+    ? '/'
+    : next && next.startsWith('/')
+      ? next
+      : '/login'
+  router.replace(target)
+}
 </script>
 
 <style scoped>
@@ -47,37 +71,37 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: linear-gradient(160deg, #eef2ff 0%, #f8f9ff 45%, #fdf2f8 100%);
+  background: linear-gradient(160deg, #eef2ff 0%, #faf9ff 45%, #fdf2f8 100%);
 }
 
 .glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.55;
-  animation: drift 6s ease-in-out infinite alternate;
+  filter: blur(72px);
+  opacity: 0.5;
+  animation: drift 7s ease-in-out infinite alternate;
 }
 
 .glow-a {
-  width: 300px;
-  height: 300px;
-  left: -90px;
-  top: -80px;
+  width: 320px;
+  height: 320px;
+  left: -100px;
+  top: -90px;
   background: rgba(99, 102, 241, 0.35);
 }
 
 .glow-b {
-  width: 260px;
-  height: 260px;
-  right: -70px;
-  bottom: -70px;
-  background: rgba(236, 72, 153, 0.25);
-  animation-delay: -3s;
+  width: 280px;
+  height: 280px;
+  right: -80px;
+  bottom: -80px;
+  background: rgba(236, 72, 153, 0.22);
+  animation-delay: -3.5s;
 }
 
 @keyframes drift {
   to {
-    transform: translate(24px, 18px) scale(1.08);
+    transform: translate(22px, 16px) scale(1.06);
   }
 }
 
@@ -87,25 +111,37 @@ onMounted(() => {
   padding: 24px;
 }
 
+.brand-stage {
+  opacity: 0;
+  transform: translateY(18px) scale(0.96);
+  transition:
+    opacity 0.75s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.brand-stage.in {
+  opacity: 1;
+  transform: none;
+}
+
 .logo-shell {
-  width: 108px;
-  height: 108px;
+  width: 112px;
+  height: 112px;
   margin: 0 auto 22px;
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 44px rgba(79, 70, 229, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 46px rgba(79, 70, 229, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  animation: rise-in 0.75s ease both;
 }
 
 .logo {
-  width: 84px;
-  height: 84px;
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
   object-fit: cover;
-  border-radius: 22px;
 }
 
 .brand {
@@ -114,7 +150,6 @@ onMounted(() => {
   align-items: baseline;
   justify-content: center;
   gap: 10px;
-  animation: rise-in 0.75s ease 0.32s both;
 }
 
 .brand-en {
@@ -134,30 +169,32 @@ onMounted(() => {
 }
 
 .slogan {
-  margin: 14px 0 0;
+  margin: 18px 0 0;
   font-size: 15px;
   color: var(--wfl-text-secondary);
-  letter-spacing: 2px;
-  animation: rise-in 0.9s ease 0.72s both;
+  letter-spacing: 3px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.8s ease 0.05s,
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.slogan.in {
+  opacity: 1;
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glow,
-  .logo-shell,
-  .brand,
-  .slogan {
+  .glow {
     animation: none;
+  }
+
+  .brand-stage,
+  .slogan {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 </style>
