@@ -5,6 +5,12 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: '/splash',
+      name: 'splash',
+      component: () => import('@/views/SplashView.vue'),
+      meta: { title: 'WordFlow 词流' },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('@/views/LoginView.vue'),
@@ -71,11 +77,26 @@ const router = createRouter({
 router.beforeEach((to) => {
   const userStore = useUserStore()
   document.title = `${String(to.meta.title || '')} · WordFlow 词流`
-  if (to.meta.requiresAuth && !userStore.token) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+
+  // 已登录时：开屏页与登录/注册页都不再展示
+  if (userStore.token) {
+    if (to.name === 'splash' || to.name === 'login' || to.name === 'register') {
+      return { name: 'home' }
+    }
+    return true
   }
-  if ((to.name === 'login' || to.name === 'register') && userStore.token) {
-    return { name: 'home' }
+
+  // 未登录：每次冷启动先展示一次开屏
+  if (!sessionStorage.getItem('wordflow_splash_seen')) {
+    sessionStorage.setItem('wordflow_splash_seen', '1')
+    if (to.name !== 'splash') {
+      return { name: 'splash', query: { next: to.fullPath } }
+    }
+    return true
+  }
+
+  if (to.meta.requiresAuth) {
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
   return true
 })
