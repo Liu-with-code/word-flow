@@ -22,8 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * 模块职责：
  *   - 注册成功后直接签发 JWT，登录成功后返回 JWT 与用户信息。
- * 你需要完成：
- *   - 验证码、第三方登录（微信/QQ）可在此模块扩展。
  */
 @Tag(name = "认证")
 @RestController

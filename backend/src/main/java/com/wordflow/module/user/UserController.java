@@ -24,8 +24,6 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * 模块职责：
  *   - 查询当前登录用户信息、更新个人资料。
- * 你需要完成：
- *   - 修改密码接口、头像上传接口。
  */
 @Tag(name = "用户")
 @RestController

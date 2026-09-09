@@ -21,9 +21,6 @@ import java.util.Objects;
  *   - 词书列表（标记当前用户选中的词书）；
  *   - 用户切换词书（更新 sys_user.active_book_id）；
  *   - 按 ID 校验词书是否存在。
- * 你需要完成：
- *   - 词书封面图片上传/外链管理（目前用 cover_color 替代封面图）；
- *   - 词书内单词量较大时，可在列表中额外返回「已学/未学」统计。
  */
 @Service
 @RequiredArgsConstructor

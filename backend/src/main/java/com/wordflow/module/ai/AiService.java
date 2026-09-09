@@ -15,8 +15,6 @@ import java.util.function.Consumer;
  * 模块职责：
  *   - 屏蔽底层大模型差异：业务层只调用本接口，
  *     provider=mock 时用 {@link MockAiService}，provider=openai 时用 {@link OpenAiService}。
- * 你需要完成：
- *   - 后期可按需扩展接口方法（如生词润色、文章难度评估）。
  */
 public interface AiService {
 

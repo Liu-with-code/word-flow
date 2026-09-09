@@ -36,8 +36,6 @@ import java.util.concurrent.CompletableFuture;
  *
  * 模块职责：
  *   - 暴露「今日计划 / 逐步作答 / AI 练习句 / 完成单词 / 总结短文」全套接口。
- * 你需要完成：
- *   - 无需大改；如需断点续学到具体步骤，配合服务层扩展。
  */
 @Tag(name = "每日学习")
 @RestController

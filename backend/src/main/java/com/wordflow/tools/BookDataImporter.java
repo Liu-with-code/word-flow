@@ -37,9 +37,6 @@ import java.util.stream.Stream;
  * 幂等性：按 (book_id, word) 唯一键 upsert，可重复执行；
  *         已存在单词保留原 ID，用户学习进度不会丢失。
  *
- * 你需要完成：
- *   - 词书数量变多后可改为“扫描目录 + 清单文件（书名/级别/难度）”驱动，
- *     避免在代码里维护文件名映射。
  */
 @Slf4j
 @Component

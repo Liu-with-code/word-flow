@@ -26,8 +26,6 @@ import java.util.Map;
  *
  * 模块职责：
  *   - 首页仪表盘数据、近 7 天学习量、最近作答记录。
- * 你需要完成：
- *   - 更丰富的报表（记忆留存率、艾宾浩斯准时率）可在此扩展。
  */
 @Service
 @RequiredArgsConstructor

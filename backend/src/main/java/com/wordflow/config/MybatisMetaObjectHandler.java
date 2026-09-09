@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
  *
  * 模块职责：
  *   - 自动为 createdAt / updatedAt 赋值，避免每个 Service 手动设置。
- * 你需要完成：
- *   - 如新增操作人字段（createdBy），可在此统一填充。
  */
 @Component
 public class MybatisMetaObjectHandler implements MetaObjectHandler {

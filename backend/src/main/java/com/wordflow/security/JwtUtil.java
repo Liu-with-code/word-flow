@@ -15,8 +15,6 @@ import java.util.Date;
  *
  * 模块职责：
  *   - 生成、解析登录令牌。令牌中仅存 userId，无敏感信息。
- * 你需要完成：
- *   - 生产环境务必更换 application.yml 中的 jwt.secret（至少 32 字节）。
  */
 @Component
 public class JwtUtil {

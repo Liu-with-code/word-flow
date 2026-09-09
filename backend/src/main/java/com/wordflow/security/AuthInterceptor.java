@@ -18,8 +18,6 @@ import java.nio.charset.StandardCharsets;
  *
  * 模块职责：
  *   - 校验 Authorization: Bearer <token>，通过后写入 {@link UserContext}。
- * 你需要完成：
- *   - 若需要细粒度权限（如管理员接口），在此叠加角色校验。
  */
 @Component
 @RequiredArgsConstructor

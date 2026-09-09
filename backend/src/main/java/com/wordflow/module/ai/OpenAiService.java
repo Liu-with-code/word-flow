@@ -40,8 +40,6 @@ import java.util.function.Consumer;
  * 模块职责：
  *   - 通过 RestClient 调用 /chat/completions，统一解析 JSON 输出。
  *   - 兼容 OpenAI / DeepSeek / 通义千问等 OpenAI 协议服务。
- * 你需要完成：
- *   - 生产环境建议：接入公司统一大模型网关、补充限流/熔断/超时重试。
  */
 @Service
 @RequiredArgsConstructor

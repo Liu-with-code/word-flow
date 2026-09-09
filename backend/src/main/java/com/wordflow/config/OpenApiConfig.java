@@ -14,8 +14,6 @@ import org.springframework.context.annotation.Configuration;
  * 模块职责：
  *   - 提供接口文档访问入口（启动后访问 /swagger-ui.html），
  *     并声明 JWT Bearer 认证方式。
- * 你需要完成：
- *   - 生产环境建议关闭文档或加权限控制（见 application.yml 中 springdoc.enabled）。
  */
 @Configuration
 public class OpenApiConfig {

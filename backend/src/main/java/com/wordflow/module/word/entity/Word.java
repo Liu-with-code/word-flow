@@ -14,8 +14,6 @@ import java.time.LocalDateTime;
  *
  * 模块职责：
  *   - 词库基础数据：单词、音标、释义、词性、例句、难度、级别。
- * 你需要完成：
- *   - 词库导入：可写一个导入接口/脚本，批量导入 CSV 或 JSON 词库。
  */
 @Data
 @TableName("learn_word")

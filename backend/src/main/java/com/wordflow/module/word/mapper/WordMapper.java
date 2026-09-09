@@ -9,8 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
  *
  * 模块职责：
  *   - learn_word 表基础 CRUD。
- * 你需要完成：
- *   - 按难度/级别组合查询的复杂 SQL 可加在这里。
  */
 @Mapper
 public interface WordMapper extends BaseMapper<Word> {

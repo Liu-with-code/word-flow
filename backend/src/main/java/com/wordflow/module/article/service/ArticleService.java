@@ -29,8 +29,6 @@ import java.util.List;
  * 模块职责：
  *   - 调用 AI 生成「今日总结短文 / 复习短文」；
  *   - 调用 AI 批改用户译文，保存每次尝试，返回错误明细。
- * 你需要完成：
- *   - 文章去重/缓存策略；批改超时后的降级提示。
  */
 @Service
 @RequiredArgsConstructor

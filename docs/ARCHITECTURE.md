@@ -35,9 +35,9 @@ flowchart LR
     S --> E[统一异常 GlobalExceptionHandler]
 ```
 
-## 3. 后端模块职责与“你需要完成的部分”
+## 3. 后端模块职责与扩展方向
 
-| 模块 | 职责 | 你需要完成 |
+| 模块 | 职责 | 扩展方向 |
 | --- | --- | --- |
 | `common` | 统一响应、错误码、全局异常、分页 | 一般无需改；可扩展业务错误码 |
 | `config` | CORS、MyBatis-Plus、OpenAPI、字段自动填充 | 生产环境收紧 CORS 白名单、关闭 Swagger |

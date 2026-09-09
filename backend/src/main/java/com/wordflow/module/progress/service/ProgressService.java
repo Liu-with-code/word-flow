@@ -38,8 +38,6 @@ import java.util.Objects;
  *   - 复习到期时间按「用户学习日 + 间隔天数」锚定到用户所在时区的日边界；
  *   - 日边界小时来自 sys_user.day_boundary_hour（0=不启用，凌晨该点前背的词算前一天）。
  *
- * 你需要完成：
- *   - 可调整间隔数组；建议后期根据真实用户遗忘数据做个性化参数。
  */
 @Service
 @RequiredArgsConstructor

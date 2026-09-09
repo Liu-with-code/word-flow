@@ -7,8 +7,6 @@ import lombok.Data;
  *
  * 模块职责：
  *   - 所有 REST 接口统一返回 { code, message, data }，方便前端统一处理。
- * 你需要完成：
- *   - 一般无需修改；如需分页数据，配合 {@link PageResult} 使用。
  */
 @Data
 public class Result<T> {

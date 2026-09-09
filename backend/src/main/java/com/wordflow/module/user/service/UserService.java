@@ -22,9 +22,6 @@ import java.time.LocalDateTime;
  *
  * 模块职责：
  *   - 注册、登录校验、用户资料查询与更新。
- * 你需要完成：
- *   - 头像上传：建议接入 OSS/本地静态目录，并在 updateProfile 中更新 avatarUrl。
- *   - 找回密码/修改密码流程。
  */
 @Service
 public class UserService {

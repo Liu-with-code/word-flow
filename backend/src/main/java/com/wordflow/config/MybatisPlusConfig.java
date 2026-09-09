@@ -11,8 +11,6 @@ import org.springframework.context.annotation.Configuration;
  *
  * 模块职责：
  *   - 注册分页插件，使 Page 查询生效。
- * 你需要完成：
- *   - 如需乐观锁、多租户等能力，按官方文档在此追加 InnerInterceptor。
  */
 @Configuration
 public class MybatisPlusConfig {

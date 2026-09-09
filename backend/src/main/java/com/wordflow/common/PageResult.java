@@ -10,8 +10,6 @@ import java.util.List;
  *
  * 模块职责：
  *   - 包装 MyBatis-Plus 的分页结果，统一结构 { list, total, page, size }。
- * 你需要完成：
- *   - 一般无需修改。
  */
 @Data
 public class PageResult<T> {

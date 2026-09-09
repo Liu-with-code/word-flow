@@ -5,8 +5,6 @@ package com.wordflow.common;
  *
  * 模块职责：
  *   - 定义全局响应码，前后端约定使用该枚举中的数值。
- * 你需要完成：
- *   - 可在此扩展业务码（如 1001=单词不存在），并保持与前端一致。
  */
 public enum ResultCode {
 

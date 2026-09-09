@@ -14,8 +14,6 @@ import java.time.LocalDateTime;
  *
  * 模块职责：
  *   - 记录单词学习状态、答对/答错次数与艾宾浩斯复习时间。
- * 你需要完成：
- *   - 如需「熟练度/模糊度」等更细指标，可在此扩展字段。
  */
 @Data
 @TableName("learn_progress")

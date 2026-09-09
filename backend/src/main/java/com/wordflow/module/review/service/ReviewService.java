@@ -42,8 +42,6 @@ import java.util.List;
  *
  * 优先级规则（可调）：
  *   基础 1 + 逾期 1 天加 1（最多 +2）+ 早期阶段(1-2 轮)加 1，最高 4。
- * 你需要完成：
- *   - 后续可基于历史作答准确率动态调整优先级，实现个性化复习。
  */
 @Service
 @RequiredArgsConstructor

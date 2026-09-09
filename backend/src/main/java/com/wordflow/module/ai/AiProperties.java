@@ -7,9 +7,6 @@ import org.springframework.stereotype.Component;
 /**
  * AI 配置项（application.yml 的 ai.*）。
  *
- * 你需要完成：
- *   - provider=openai 时，通过环境变量 AI_API_KEY 注入密钥；
- *   - 若使用国内大模型（通义千问/DeepSeek 等），base-url 与 model 替换即可。
  */
 @Data
 @Component

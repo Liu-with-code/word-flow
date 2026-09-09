@@ -6,8 +6,6 @@ package com.wordflow.security;
  * 模块职责：
  *   - 认证拦截器解析 JWT 后将 userId 放入上下文，业务层通过
  *     UserContext.getUserId() 获取当前用户，避免每个接口手动传参。
- * 你需要完成：
- *   - 若后期需要角色/权限，可扩展为 UserContext.set(userId, roles) 结构。
  */
 public final class UserContext {
 

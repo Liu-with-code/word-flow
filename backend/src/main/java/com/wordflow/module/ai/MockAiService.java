@@ -23,8 +23,6 @@ import java.util.function.Consumer;
  * 模块职责：
  *   - 在未配置大模型 API Key 时，用规则算法模拟「翻译批改 / 句子生成 / 短文生成」，
  *     让前后端全流程可离线联调。
- * 你需要完成：
- *   - 规则只能覆盖简单场景，正式使用请切换 provider=openai 并接入真实大模型。
  */
 @Service
 @RequiredArgsConstructor
@@ -82,7 +80,7 @@ public class MockAiService implements AiService {
     @Override
     public PracticeSentence generatePracticeSentence(String currentWord, String currentChinese,
                                                      List<String> previousWords) {
-        // TODO(你)：接入真实大模型后，这里会生成更自然的例句，并自然复现已学单词。
+        // TODO：接入真实大模型后，这里会生成更自然的例句，并自然复现已学单词。
         String sentenceEn = "I often see the word \"" + currentWord
                 + "\" in daily life, and its Chinese meaning is \"" + currentChinese + "\".";
         String sentenceZh = "我经常在日常生活里看到单词 \"" + currentWord
@@ -98,7 +96,7 @@ public class MockAiService implements AiService {
 
     @Override
     public ArticleDraft generateArticle(String scene, List<AiWord> words, String extraInstruction) {
-        // TODO(你)：接入真实大模型后，生成连贯、自然、符合艾宾浩斯频次的短文。
+        // TODO：接入真实大模型后，生成连贯、自然、符合艾宾浩斯频次的短文。
         StringBuilder en = new StringBuilder();
         StringBuilder zh = new StringBuilder();
         for (AiWord w : words) {

@@ -20,9 +20,6 @@ import java.util.List;
  *
  * 模块职责：
  *   - 词库分页查询、按 ID 查询、抽取今日未学单词。
- * 你需要完成：
- *   - 词库管理（新增/编辑/删除，建议加管理员权限）；
- *   - 更精细的选词策略（按用户水平/词频/考纲优先级）。
  */
 @Service
 @RequiredArgsConstructor
@@ -60,8 +57,6 @@ public class WordService {
      *
      * 实现说明：先查全部未学单词再在内存中洗牌，避免直接拼接 RAND() 的
      * SQL 注入风险，同时保证数量可控（目标 <= 100）。
-     * 你需要完成：
-     *   - 词量变大后建议改为「按权重抽样」策略（如优先推荐高频/考纲词）。
      */
     public List<Word> pickNewWords(Long userId, int goal, Long bookId) {
         List<Word> all = wordMapper.selectList(

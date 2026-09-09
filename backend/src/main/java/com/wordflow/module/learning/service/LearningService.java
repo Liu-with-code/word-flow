@@ -59,10 +59,6 @@ import java.util.function.Consumer;
  *   -> TRANS_EN(英译中, AI批改) -> TRANS_ZH(中译英, AI批改)
  *   -> COMPLETE_WORD -> 全部完成后生成总结短文 -> ARTICLE(全文翻译批改, >=60 通过)
  *
- * 你需要完成：
- *   - 学习中断续学：当前实现可继续未完成的计划；如需断点精确到“步骤”，
- *     建议给 learn_plan_word 增加 step 字段。
- *   - 今日总结短文生成前，可将前面已学单词作为“已学上下文”传给 AI。
  */
 @Service
 @RequiredArgsConstructor

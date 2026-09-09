@@ -15,8 +15,6 @@ import java.time.LocalDateTime;
  *
  * 模块职责：
  *   - 用户基础信息：登录名、密码哈希、昵称、每日目标等。
- * 你需要完成：
- *   - 若增加手机号/邮箱登录、会员等级等，请同步修改表和本实体。
  */
 @Data
 @TableName("sys_user")

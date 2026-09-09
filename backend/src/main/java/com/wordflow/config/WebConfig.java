@@ -17,8 +17,6 @@ import java.nio.file.Paths;
  * 模块职责：
  *   - CORS 跨域配置（开发环境放开，生产请收紧域名白名单）。
  *   - 注册登录拦截器，除白名单外所有 /api/** 请求都要求 JWT。
- * 你需要完成：
- *   - 生产环境将 allowedOriginPatterns 改为具体域名。
  */
 @Configuration
 @RequiredArgsConstructor
