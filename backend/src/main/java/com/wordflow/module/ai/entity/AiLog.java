@@ -11,9 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * AI 调用日志实体，对应表 learn_ai_log。
- *
- * 模块职责：
- *   - 记录每次大模型请求与响应，便于调试 Prompt、排查费用与复现问题。
  */
 @Data
 @TableName("learn_ai_log")

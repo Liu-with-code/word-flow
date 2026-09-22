@@ -4,9 +4,6 @@ import java.util.List;
 
 /**
  * AI 模块数据模型（请求/响应）。
- *
- * 模块职责：
- *   - 统一 AI 交互的入参与出参，业务层只依赖这些结构，不关心具体模型。
  */
 public final class AiModels {
 

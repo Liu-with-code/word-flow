@@ -20,14 +20,18 @@ import java.util.function.Consumer;
 /**
  * 离线 Mock AI 实现。
  *
- * 模块职责：
- *   - 在未配置大模型 API Key 时，用规则算法模拟「翻译批改 / 句子生成 / 短文生成」，
  *     让前后端全流程可离线联调。
  */
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "ai.provider", havingValue = "mock", matchIfMissing = true)
 public class MockAiService implements AiService {
+
+    /** 中文语言标识（用于判断翻译方向） */
+    private static final String LANG_ZH = "zh";
+
+    /** 短文场景标识：短文批改的通过阈值更宽松 */
+    private static final String SCENE_ARTICLE = "ARTICLE";
 
     private final AiLogMapper aiLogMapper;
     private final ObjectMapper objectMapper;
@@ -36,10 +40,10 @@ public class MockAiService implements AiService {
     public TranslationJudgement judgeTranslation(JudgeRequest request) {
         boolean passed;
         int score;
-        if ("zh".equals(request.targetLang())) {
+        if (LANG_ZH.equals(request.targetLang())) {
             // 英译中：比较用户译文与标准译文的汉字重合度
             score = chineseOverlapScore(request.userTranslation(), request.standardAnswer());
-            int threshold = "ARTICLE".equals(request.scene()) ? 40 : 55;
+            int threshold = SCENE_ARTICLE.equals(request.scene()) ? 40 : 55;
             boolean matchesMeaning = request.expectedMeaning() != null
                     && request.userTranslation() != null
                     && request.userTranslation().contains(request.expectedMeaning());

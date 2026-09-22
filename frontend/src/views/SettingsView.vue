@@ -17,16 +17,20 @@
             {{ avatarText }}
           </el-avatar>
           <div class="avatar-mask">
-            <el-icon :size="18"><Camera /></el-icon>
+            <el-icon :size="18">
+              <Camera />
+            </el-icon>
             <span>更换头像</span>
           </div>
         </div>
       </el-upload>
       <div class="profile-meta">
-        <div class="profile-name">{{ userStore.user?.nickname || '未设置昵称' }}</div>
+        <div class="profile-name">
+          {{ userStore.user?.nickname || '未设置昵称' }}
+        </div>
         <div class="profile-username">@{{ userStore.user?.username }}</div>
         <div class="profile-stats">
-          <el-tag size="small" effect="plain">已学 {{ stats?.totalLearned ?? 0 }} 词</el-tag>
+          <el-tag size="small" effect="plain"> 已学 {{ stats?.totalLearned ?? 0 }} 词 </el-tag>
           <el-tag size="small" type="success" effect="plain">
             连续 {{ stats?.streakDays ?? 0 }} 天
           </el-tag>
@@ -44,18 +48,31 @@
         </div>
         <div class="form-item">
           <label>每日新词</label>
-          <el-input-number v-model="form.dailyWordGoal" :min="1" :max="100" controls-position="right" />
+          <el-input-number
+            v-model="form.dailyWordGoal"
+            :min="1"
+            :max="100"
+            controls-position="right"
+          />
           <p class="item-note">每天计划学习的新单词数</p>
         </div>
         <div class="form-item">
           <label>每日复习</label>
-          <el-input-number v-model="form.dailyReviewGoal" :min="1" :max="100" controls-position="right" />
+          <el-input-number
+            v-model="form.dailyReviewGoal"
+            :min="1"
+            :max="100"
+            controls-position="right"
+          />
           <p class="item-note">每次复习短文最多包含的单词数</p>
         </div>
         <div class="form-item">
           <label>复习日边界（夜猫子设置）</label>
           <el-select v-model="form.dayBoundaryHour" class="boundary-select">
-            <el-option :value="0" label="0 点（默认）：凌晨背的词次日 0 点到期，白天登录会智能询问" />
+            <el-option
+              :value="0"
+              label="0 点（默认）：凌晨背的词次日 0 点到期，白天登录会智能询问"
+            />
             <el-option :value="2" label="2 点：凌晨 0-2 点背的词算前一天" />
             <el-option :value="3" label="3 点：凌晨 0-3 点背的词算前一天" />
             <el-option :value="4" label="4 点：凌晨 0-4 点背的词算前一天（推荐夜猫子）" />
@@ -66,7 +83,9 @@
         </div>
       </div>
       <div class="save-row">
-        <el-button type="primary" size="large" :loading="saving" @click="save">保存修改</el-button>
+        <el-button type="primary" size="large" :loading="saving" @click="save">
+          保存修改
+        </el-button>
       </div>
     </div>
 
@@ -78,94 +97,94 @@
           <div class="danger-title">退出登录</div>
           <div class="danger-desc">退出后本地将清除登录状态，学习数据仍保存在云端。</div>
         </div>
-        <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
+        <el-button type="danger" plain @click="handleLogout"> 退出登录 </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, type UploadRequestOptions } from 'element-plus'
-import * as learningApi from '@/api/learning'
-import * as statisticsApi from '@/api/statistics'
-import { useUserStore } from '@/stores/user'
-import type { DashboardStats } from '@/types/models'
+import { computed, onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage, type UploadRequestOptions } from 'element-plus';
+import * as learningApi from '@/api/learning';
+import * as statisticsApi from '@/api/statistics';
+import { useUserStore } from '@/stores/user';
+import type { DashboardStats } from '@/types/models';
 
-const router = useRouter()
-const userStore = useUserStore()
+const router = useRouter();
+const userStore = useUserStore();
 
-const saving = ref(false)
-const uploading = ref(false)
-const stats = ref<DashboardStats | null>(null)
+const saving = ref(false);
+const uploading = ref(false);
+const stats = ref<DashboardStats | null>(null);
 
 const form = reactive({
   nickname: userStore.user?.nickname || '',
   dailyWordGoal: userStore.user?.dailyWordGoal || 20,
   dailyReviewGoal: userStore.user?.dailyReviewGoal || 20,
   dayBoundaryHour: userStore.user?.dayBoundaryHour ?? 0,
-})
+});
 
 const avatarText = computed(() => {
-  const nickname = userStore.user?.nickname || '词'
-  return nickname.slice(0, 1).toUpperCase()
-})
+  const nickname = userStore.user?.nickname || '词';
+  return nickname.slice(0, 1).toUpperCase();
+});
 
 onMounted(async () => {
   try {
-    stats.value = await statisticsApi.getDashboard()
+    stats.value = await statisticsApi.getDashboard();
   } catch {
     // 统计加载失败不影响设置页
   }
-})
+});
 
 async function save() {
-  saving.value = true
+  saving.value = true;
   try {
     await userStore.updateProfile({
       nickname: form.nickname,
       dailyWordGoal: form.dailyWordGoal,
       dailyReviewGoal: form.dailyReviewGoal,
       dayBoundaryHour: form.dayBoundaryHour,
-    })
+    });
     try {
-      await learningApi.reconcileToday()
+      await learningApi.reconcileToday();
     } catch {
       // 计划同步失败不影响保存结果，下次进入学习时会再同步
     }
-    ElMessage.success('设置已保存')
+    ElMessage.success('设置已保存');
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 function beforeAvatarUpload(file: File) {
-  const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+  const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
   if (!allowed.includes(file.type)) {
-    ElMessage.error('仅支持 JPG / PNG / WebP / GIF 格式图片')
-    return false
+    ElMessage.error('仅支持 JPG / PNG / WebP / GIF 格式图片');
+    return false;
   }
   if (file.size > 2 * 1024 * 1024) {
-    ElMessage.error('图片大小不能超过 2MB')
-    return false
+    ElMessage.error('图片大小不能超过 2MB');
+    return false;
   }
-  return true
+  return true;
 }
 
 async function customUpload(options: UploadRequestOptions) {
-  uploading.value = true
+  uploading.value = true;
   try {
-    await userStore.uploadAvatar(options.file as File)
-    ElMessage.success('头像已更新')
+    await userStore.uploadAvatar(options.file as File);
+    ElMessage.success('头像已更新');
   } finally {
-    uploading.value = false
+    uploading.value = false;
   }
 }
 
 function handleLogout() {
-  userStore.logout()
-  router.replace('/login')
+  userStore.logout();
+  router.replace('/login');
 }
 </script>
 

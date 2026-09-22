@@ -1,0 +1,13 @@
+# Prettier 忽略清单（格式化范围与 ESLint 保持一致）
+node_modules/
+dist/
+public/
+coverage/
+
+# 锁文件与自动生成文件交由工具维护
+package-lock.json
+
+# 类型声明与静态资源
+*.d.ts
+*.min.js
+*.min.css

@@ -13,10 +13,10 @@
     "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
+    "types": ["node"],
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "vite.config.ts", "eslint.config.mjs"]
 }
-

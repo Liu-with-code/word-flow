@@ -29,26 +29,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    percent: number
-    size?: number
-    stroke?: number
-    color?: string
+    percent: number;
+    size?: number;
+    stroke?: number;
+    color?: string;
   }>(),
   {
     size: 120,
     stroke: 10,
     color: '#4f46e5',
   },
-)
+);
 
-const normalized = computed(() => Math.min(100, Math.max(0, props.percent)))
-const radius = computed(() => (props.size - props.stroke) / 2)
-const circumference = computed(() => 2 * Math.PI * radius.value)
-const offset = computed(() => circumference.value * (1 - normalized.value / 100))
+const normalized = computed(() => Math.min(100, Math.max(0, props.percent)));
+const radius = computed(() => (props.size - props.stroke) / 2);
+const circumference = computed(() => 2 * Math.PI * radius.value);
+const offset = computed(() => circumference.value * (1 - normalized.value / 100));
 </script>
 
 <style scoped>
@@ -68,4 +68,3 @@ const offset = computed(() => circumference.value * (1 - normalized.value / 100)
   justify-content: center;
 }
 </style>
-

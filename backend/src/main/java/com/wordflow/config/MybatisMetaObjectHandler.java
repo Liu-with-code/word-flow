@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 
 /**
  * 通用字段自动填充。
- *
- * 模块职责：
- *   - 自动为 createdAt / updatedAt 赋值，避免每个 Service 手动设置。
  */
 @Component
 public class MybatisMetaObjectHandler implements MetaObjectHandler {

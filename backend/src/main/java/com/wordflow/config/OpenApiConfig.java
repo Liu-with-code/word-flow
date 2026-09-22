@@ -11,8 +11,6 @@ import org.springframework.context.annotation.Configuration;
 /**
  * OpenAPI / Swagger 配置。
  *
- * 模块职责：
- *   - 提供接口文档访问入口（启动后访问 /swagger-ui.html），
  *     并声明 JWT Bearer 认证方式。
  */
 @Configuration

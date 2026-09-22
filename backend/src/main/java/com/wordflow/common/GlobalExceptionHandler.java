@@ -10,10 +10,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * 全局异常处理器。
- *
- * 模块职责：
- *   - 统一捕获业务异常、参数校验异常、系统异常，转换为 {@link Result} 返回。
- *   - 遵循《阿里巴巴Java开发手册》：异常日志必须记录完整堆栈。
  */
 @Slf4j
 @RestControllerAdvice

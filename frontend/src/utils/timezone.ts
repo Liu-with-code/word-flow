@@ -6,9 +6,9 @@
  */
 export function detectTimezone(): string {
   try {
-    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone
-    return zone || 'Asia/Shanghai'
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return zone || 'Asia/Shanghai';
   } catch {
-    return 'Asia/Shanghai'
+    return 'Asia/Shanghai';
   }
 }

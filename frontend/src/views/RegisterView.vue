@@ -17,15 +17,25 @@
       <h1 class="auth-title">创建账号</h1>
       <p class="auth-subtitle">每天 20 个单词，用输出检验输入</p>
 
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @keyup.enter="submit">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        @keyup.enter="submit"
+      >
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" size="large" placeholder="4-20 位字母、数字或下划线">
-            <template #prefix><el-icon><User /></el-icon></template>
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
           </el-input>
         </el-form-item>
         <el-form-item label="昵称（可选）" prop="nickname">
           <el-input v-model="form.nickname" size="large" placeholder="你希望别人怎么称呼你">
-            <template #prefix><el-icon><Postcard /></el-icon></template>
+            <template #prefix>
+              <el-icon><Postcard /></el-icon>
+            </template>
           </el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
@@ -36,41 +46,49 @@
             show-password
             placeholder="6-32 位密码"
           >
-            <template #prefix><el-icon><Lock /></el-icon></template>
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
           </el-input>
         </el-form-item>
 
-        <el-button class="submit-btn" type="primary" size="large" :loading="loading" @click="submit">
+        <el-button
+          class="submit-btn"
+          type="primary"
+          size="large"
+          :loading="loading"
+          @click="submit"
+        >
           注册并开始学习
         </el-button>
       </el-form>
 
       <div class="auth-footer">
         已有账号？
-        <router-link class="auth-link" to="/login">去登录</router-link>
+        <router-link class="auth-link" to="/login"> 去登录 </router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import type { FormInstance, FormRules } from 'element-plus'
-import { useUserStore } from '@/stores/user'
-import { randomQuote } from '@/utils/quotes'
+import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import type { FormInstance, FormRules } from 'element-plus';
+import { useUserStore } from '@/stores/user';
+import { randomQuote } from '@/utils/quotes';
 
-const router = useRouter()
-const userStore = useUserStore()
-const slogan = ref(randomQuote())
+const router = useRouter();
+const userStore = useUserStore();
+const slogan = ref(randomQuote());
 
-const formRef = ref<FormInstance>()
-const loading = ref(false)
+const formRef = ref<FormInstance>();
+const loading = ref(false);
 const form = reactive({
   username: '',
   nickname: '',
   password: '',
-})
+});
 
 const rules: FormRules = {
   username: [
@@ -81,18 +99,18 @@ const rules: FormRules = {
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 32, message: '密码长度须在 6-32 之间', trigger: 'blur' },
   ],
-}
+};
 
 async function submit() {
-  if (!formRef.value) return
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
-  loading.value = true
+  if (!formRef.value) return;
+  const valid = await formRef.value.validate().catch(() => false);
+  if (!valid) return;
+  loading.value = true;
   try {
-    await userStore.register(form.username, form.password, form.nickname)
-    router.replace('/')
+    await userStore.register(form.username, form.password, form.nickname);
+    router.replace('/');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>

@@ -26,8 +26,6 @@ import java.util.stream.Stream;
 /**
  * 词书 JSONL 数据导入器（一次性工具）。
  *
- * 模块职责：
- *   - 把 database/raw 下的 KyleBing/english-vocabulary JSONL 词书
  *     解析并批量写入 learn_word，回写 learn_book.word_count。
  *
  * 运行方式（在 backend 目录下）：
@@ -36,7 +34,6 @@ import java.util.stream.Stream;
  *
  * 幂等性：按 (book_id, word) 唯一键 upsert，可重复执行；
  *         已存在单词保留原 ID，用户学习进度不会丢失。
- *
  */
 @Slf4j
 @Component
@@ -46,6 +43,18 @@ public class BookDataImporter implements ApplicationRunner {
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+
+    /** 中文释义分隔符正则：同时匹配全角与半角分号 */
+    private static final String MEANING_SEPARATOR_REGEX = "[；;]";
+
+    /** 连续空白折叠为单个空格 */
+    private static final String MULTI_SPACE_REGEX = "\\s+";
+
+    /** 中文逗号后的多余空格 */
+    private static final String SPACE_AFTER_COMMA_REGEX = "[，,] +";
+
+    /** 中文逗号前的多余空格 */
+    private static final String SPACE_BEFORE_COMMA_REGEX = " +[，,]";
 
     @Value("${wordflow.import-dir:../database/raw}")
     private String importDir;
@@ -319,11 +328,11 @@ public class BookDataImporter implements ApplicationRunner {
         private static String normalizeChinese(Set<String> rawTranslations) {
             LinkedHashSet<String> segments = new LinkedHashSet<>();
             for (String raw : rawTranslations) {
-                for (String part : raw.split("[；;]")) {
+                for (String part : raw.split(MEANING_SEPARATOR_REGEX)) {
                     String clean = part.trim()
-                            .replaceAll("\\s+", " ")
-                            .replaceAll("[，,] +", "，")
-                            .replaceAll(" +[，,]", "，");
+                            .replaceAll(MULTI_SPACE_REGEX, " ")
+                            .replaceAll(SPACE_AFTER_COMMA_REGEX, "，")
+                            .replaceAll(SPACE_BEFORE_COMMA_REGEX, "，");
                     if (!clean.isEmpty()) {
                         segments.add(clean);
                     }

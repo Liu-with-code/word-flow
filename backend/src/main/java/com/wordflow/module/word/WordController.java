@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 词库接口。
- *
- * 模块职责：
- *   - 提供词库查询能力（前端「词库」页面使用）。
  */
 @Tag(name = "词库")
 @RestController

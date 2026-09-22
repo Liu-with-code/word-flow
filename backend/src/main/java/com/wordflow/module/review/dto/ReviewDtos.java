@@ -1,6 +1,7 @@
 package com.wordflow.module.review.dto;
 
 import com.wordflow.module.word.dto.WordVO;
+import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -38,5 +39,35 @@ public final class ReviewDtos {
 
     /** 用户对智能弹窗的答复 */
     public record NightPromptRequest(boolean apply) {
+    }
+
+    /** 复习热身：到期单词的快速自测卡片 */
+    public record WarmupWordVO(
+            WordVO word,
+            int stage,
+            String lastReviewAt,
+            int priority,
+            boolean marked
+    ) {
+    }
+
+    /** 复习热身概览 */
+    public record WarmupResponse(
+            int dueCount,
+            int total,
+            int markedCount,
+            List<WarmupWordVO> words
+    ) {
+    }
+
+    /** 复习热身作答：remembered=true 表示记得（推进复习阶段） */
+    public record WarmupMarkRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId,
+            boolean remembered
+    ) {
+    }
+
+    /** 热身作答结果 */
+    public record WarmupMarkResponse(boolean remembered, int stage, String status, int remaining) {
     }
 }

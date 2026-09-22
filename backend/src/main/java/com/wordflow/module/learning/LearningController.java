@@ -3,6 +3,7 @@ package com.wordflow.module.learning;
 import com.wordflow.common.Result;
 import com.wordflow.module.article.dto.ArticleDtos.ArticleCheckRequest;
 import com.wordflow.module.article.dto.ArticleDtos.ArticleCheckResult;
+import com.wordflow.module.learning.dto.LearningDtos.AddWordsRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CheckEnRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CheckZhRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CompleteWordRequest;
@@ -18,8 +19,10 @@ import com.wordflow.module.learning.service.LearningService;
 import com.wordflow.security.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,13 +32,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 每日学习接口。
  *
- * 模块职责：
- *   - 暴露「今日计划 / 逐步作答 / AI 练习句 / 完成单词 / 总结短文」全套接口。
+ * SSE 流式批改使用独立业务线程池（见 {@code AsyncConfig#aiTaskExecutor}），
+ * 不占用公共 ForkJoinPool。
  */
 @Tag(name = "每日学习")
 @RestController
@@ -43,7 +45,11 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class LearningController {
 
+    /** SSE 流式批改超时时间（毫秒） */
+    private static final long SSE_TIMEOUT_MILLIS = 180_000L;
+
     private final LearningService learningService;
+    private final ThreadPoolTaskExecutor aiTaskExecutor;
 
     @Operation(summary = "获取今日计划")
     @GetMapping("/today")
@@ -63,6 +69,12 @@ public class LearningController {
         return Result.ok(learningService.reconcileToday(UserContext.getUserId()));
     }
 
+    @Operation(summary = "追加单词到今日计划（错题本「加入今日学习」）")
+    @PostMapping("/add-words")
+    public Result<TodayPlanResponse> addWords(@Valid @RequestBody AddWordsRequest request) {
+        return Result.ok(learningService.addWordsToToday(UserContext.getUserId(), request));
+    }
+
     @Operation(summary = "获取当前单词的 AI 练习句")
     @GetMapping("/practice/{wordId}")
     public Result<PracticeResponse> practice(@PathVariable Long wordId) {
@@ -71,28 +83,28 @@ public class LearningController {
 
     @Operation(summary = "第一步：看英文选中文释义")
     @PostMapping("/check-zh")
-    public Result<StepResult> checkZh(@RequestBody CheckZhRequest request) {
+    public Result<StepResult> checkZh(@Valid @RequestBody CheckZhRequest request) {
         return Result.ok(learningService.checkZh(UserContext.getUserId(), request));
     }
 
     @Operation(summary = "第二步：看中文选英文单词")
     @PostMapping("/check-en")
-    public Result<StepResult> checkEn(@RequestBody CheckEnRequest request) {
+    public Result<StepResult> checkEn(@Valid @RequestBody CheckEnRequest request) {
         return Result.ok(learningService.checkEn(UserContext.getUserId(), request));
     }
 
     @Operation(summary = "第三步：英译中（AI 批改）")
     @PostMapping("/translate-en")
-    public Result<StepResult> translateEn(@RequestBody TranslateRequest request) {
+    public Result<StepResult> translateEn(@Valid @RequestBody TranslateRequest request) {
         return Result.ok(learningService.translateEn(UserContext.getUserId(), request));
     }
 
     @Operation(summary = "流式批改中英互译（SSE，实时显示批改过程）")
     @PostMapping(value = "/translate-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter translateStream(@RequestBody TranslateStreamRequest request) {
+    public SseEmitter translateStream(@Valid @RequestBody TranslateStreamRequest request) {
         Long userId = UserContext.getUserId();
-        SseEmitter emitter = new SseEmitter(180_000L);
-        CompletableFuture.runAsync(() -> {
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MILLIS);
+        aiTaskExecutor.execute(() -> {
             try {
                 learningService.streamTranslate(userId, request,
                         chunk -> sendEvent(emitter, "chunk", chunk),
@@ -110,19 +122,19 @@ public class LearningController {
 
     @Operation(summary = "第四步：中译英（AI 批改）")
     @PostMapping("/translate-zh")
-    public Result<StepResult> translateZh(@RequestBody TranslateRequest request) {
+    public Result<StepResult> translateZh(@Valid @RequestBody TranslateRequest request) {
         return Result.ok(learningService.translateZh(UserContext.getUserId(), request));
     }
 
     @Operation(summary = "翻译不会做时获取参考译文")
     @PostMapping("/translate-hint")
-    public Result<HintResponse> translateHint(@RequestBody TranslateHintRequest request) {
+    public Result<HintResponse> translateHint(@Valid @RequestBody TranslateHintRequest request) {
         return Result.ok(learningService.translateHint(UserContext.getUserId(), request));
     }
 
     @Operation(summary = "标记单词完成")
     @PostMapping("/complete-word")
-    public Result<StepResult> completeWord(@RequestBody CompleteWordRequest request) {
+    public Result<StepResult> completeWord(@Valid @RequestBody CompleteWordRequest request) {
         return Result.ok(learningService.completeWord(UserContext.getUserId(), request));
     }
 
@@ -134,7 +146,7 @@ public class LearningController {
 
     @Operation(summary = "批改总结短文翻译")
     @PostMapping("/article/check")
-    public Result<ArticleCheckResult> checkArticle(@RequestBody ArticleCheckRequest request) {
+    public Result<ArticleCheckResult> checkArticle(@Valid @RequestBody ArticleCheckRequest request) {
         return Result.ok(learningService.checkArticle(UserContext.getUserId(), request));
     }
 

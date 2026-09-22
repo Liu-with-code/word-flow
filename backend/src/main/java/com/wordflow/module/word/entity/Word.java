@@ -11,9 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * 单词实体，对应表 learn_word。
- *
- * 模块职责：
- *   - 词库基础数据：单词、音标、释义、词性、例句、难度、级别。
  */
 @Data
 @TableName("learn_word")

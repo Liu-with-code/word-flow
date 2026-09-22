@@ -20,46 +20,55 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useUserStore } from '@/stores/user';
 
-const router = useRouter()
-const route = useRoute()
-const userStore = useUserStore()
+const router = useRouter();
+const route = useRoute();
+const userStore = useUserStore();
 
-const logoIn = ref(false)
-const sloganIn = ref(false)
-let timers: number[] = []
+const logoIn = ref(false);
+const sloganIn = ref(false);
+const timers: number[] = [];
 
 onMounted(() => {
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   if (reduced) {
-    logoIn.value = true
-    sloganIn.value = true
-    timers.push(window.setTimeout(goNext, 1400))
-    return
+    logoIn.value = true;
+    sloganIn.value = true;
+    timers.push(window.setTimeout(goNext, 1400));
+    return;
   }
 
   // 第一幕：Logo 与名称浮现；第二幕：标语浮现
-  timers.push(window.setTimeout(() => (logoIn.value = true), 120))
-  timers.push(window.setTimeout(() => (sloganIn.value = true), 950))
-  timers.push(window.setTimeout(goNext, 2600))
-})
+  timers.push(
+    window.setTimeout(() => {
+      logoIn.value = true;
+    }, 120),
+  );
+  timers.push(
+    window.setTimeout(() => {
+      sloganIn.value = true;
+    }, 950),
+  );
+  timers.push(window.setTimeout(goNext, 2600));
+});
 
 onBeforeUnmount(() => {
-  timers.forEach((t) => window.clearTimeout(t))
-})
+  timers.forEach((t) => window.clearTimeout(t));
+});
 
 function goNext() {
-  const next = typeof route.query.next === 'string' ? route.query.next : ''
-  const target = userStore.token
-    ? '/'
-    : next && next.startsWith('/')
-      ? next
-      : '/login'
-  router.replace(target)
+  const next = typeof route.query.next === 'string' ? route.query.next : '';
+  let target = '/login';
+  if (userStore.token) {
+    target = '/';
+  } else if (next && next.startsWith('/')) {
+    target = next;
+  }
+  router.replace(target);
 }
 </script>
 

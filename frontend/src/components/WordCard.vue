@@ -5,9 +5,15 @@
       <span class="word-level">{{ word.level }}</span>
     </div>
     <div class="word-main">
-      <div class="word-text">{{ word.word }}</div>
-      <div class="word-phonetic">{{ word.phonetic }}</div>
-      <div class="word-chinese">{{ word.chinese }}</div>
+      <div class="word-text">
+        {{ word.word }}
+      </div>
+      <div class="word-phonetic">
+        {{ word.phonetic }}
+      </div>
+      <div class="word-chinese">
+        {{ word.chinese }}
+      </div>
     </div>
     <div v-if="mode === 'preview'" class="word-examples">
       <div class="example">
@@ -19,17 +25,17 @@
 </template>
 
 <script setup lang="ts">
-import type { Word } from '@/types/models'
+import type { Word } from '@/types/models';
 
 withDefaults(
   defineProps<{
-    word: Word
-    mode?: 'preview' | 'summary'
+    word: Word;
+    mode?: 'preview' | 'summary';
   }>(),
   {
     mode: 'preview',
   },
-)
+);
 </script>
 
 <style scoped>
@@ -94,4 +100,3 @@ withDefaults(
   color: var(--wfl-text-secondary);
 }
 </style>
-

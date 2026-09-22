@@ -6,7 +6,9 @@
         <img class="brand-logo" src="/photo/logo.jpg" alt="WordFlow" />
         <div>
           <div class="brand-name">WordFlow</div>
-          <div class="brand-slogan" :title="slogan.text">{{ slogan.text }}</div>
+          <div class="brand-slogan" :title="slogan.text">
+            {{ slogan.text }}
+          </div>
         </div>
       </div>
 
@@ -22,7 +24,9 @@
           {{ avatarText }}
         </el-avatar>
         <div class="sidebar-user-info">
-          <div class="nickname">{{ userStore.user?.nickname || '未登录' }}</div>
+          <div class="nickname">
+            {{ userStore.user?.nickname || '未登录' }}
+          </div>
           <div class="username">@{{ userStore.user?.username }}</div>
         </div>
       </div>
@@ -43,7 +47,9 @@
         :to="item.path"
         class="bottom-nav-item"
       >
-        <el-icon :size="20"><component :is="item.icon" /></el-icon>
+        <el-icon :size="20">
+          <component :is="item.icon" />
+        </el-icon>
         <span>{{ item.label }}</span>
       </router-link>
     </nav>
@@ -51,31 +57,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { randomShortQuote } from '@/utils/quotes'
+import { computed, ref } from 'vue';
+import { useRoute } from 'vue-router';
+import { useUserStore } from '@/stores/user';
+import { randomShortQuote } from '@/utils/quotes';
 
-const route = useRoute()
-const userStore = useUserStore()
-const slogan = ref(randomShortQuote())
+const route = useRoute();
+const userStore = useUserStore();
+const slogan = ref(randomShortQuote());
 
 const navItems = [
   { path: '/', label: '首页', icon: 'HomeFilled' },
   { path: '/learn', label: '今日学习', icon: 'Reading' },
   { path: '/review', label: '复习', icon: 'Refresh' },
   { path: '/words', label: '词书', icon: 'Collection' },
+  { path: '/mistakes', label: '错题本', icon: 'Warning' },
   { path: '/stats', label: '统计', icon: 'DataAnalysis' },
   { path: '/settings', label: '设置', icon: 'Setting' },
-]
+];
 
-const mobileNavItems = navItems
+const mobileNavItems = navItems;
 
-const activePath = computed(() => route.path)
+const activePath = computed(() => route.path);
 const avatarText = computed(() => {
-  const nickname = userStore.user?.nickname || '词'
-  return nickname.slice(0, 1).toUpperCase()
-})
+  const nickname = userStore.user?.nickname || '词';
+  return nickname.slice(0, 1).toUpperCase();
+});
 </script>
 
 <style scoped>
@@ -197,13 +204,21 @@ const avatarText = computed(() => {
 
   .bottom-nav-item {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--wfl-text-secondary);
     text-decoration: none;
+  }
+
+  .bottom-nav-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .bottom-nav-item.router-link-active {
@@ -213,11 +228,11 @@ const avatarText = computed(() => {
 
 @media (max-width: 380px) {
   .bottom-nav-item {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .bottom-nav-item .el-icon {
-    font-size: 18px;
+    font-size: 17px;
   }
 }
 </style>

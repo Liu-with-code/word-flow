@@ -1,8 +1,12 @@
 <template>
   <div class="article-panel">
     <div class="article-card wfl-card">
-      <div class="article-title">{{ title }}</div>
-      <div class="article-content">{{ content }}</div>
+      <div class="article-title">
+        {{ title }}
+      </div>
+      <div class="article-content">
+        {{ content }}
+      </div>
       <div class="article-hint">请将上面这篇英文短文翻译成中文，提交后由 AI 批改。</div>
     </div>
 
@@ -49,46 +53,48 @@
 
       <el-collapse class="standard-collapse">
         <el-collapse-item title="查看标准译文">
-          <div class="standard-zh">{{ result.standardZh }}</div>
+          <div class="standard-zh">
+            {{ result.standardZh }}
+          </div>
         </el-collapse-item>
       </el-collapse>
 
       <div v-if="!result.passed" class="result-actions">
-        <el-button @click="emit('retry')">重新翻译</el-button>
-        <el-button type="primary" @click="emit('regenerate')">换一篇重练</el-button>
+        <el-button @click="emit('retry')"> 重新翻译 </el-button>
+        <el-button type="primary" @click="emit('regenerate')"> 换一篇重练 </el-button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { ArticleCheckResult } from '@/types/models'
+import { ref } from 'vue';
+import type { ArticleCheckResult } from '@/types/models';
 
 withDefaults(
   defineProps<{
-    title: string
-    content: string
-    result?: ArticleCheckResult | null
-    loading?: boolean
+    title: string;
+    content: string;
+    result?: ArticleCheckResult | null;
+    loading?: boolean;
   }>(),
   {
     result: null,
     loading: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  (event: 'submit', translation: string): void
-  (event: 'retry'): void
-  (event: 'regenerate'): void
-}>()
+  (event: 'submit', translation: string): void;
+  (event: 'retry'): void;
+  (event: 'regenerate'): void;
+}>();
 
-const text = ref('')
+const text = ref('');
 
 function submit() {
   if (text.value.trim()) {
-    emit('submit', text.value.trim())
+    emit('submit', text.value.trim());
   }
 }
 </script>

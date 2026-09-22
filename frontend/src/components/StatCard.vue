@@ -1,40 +1,46 @@
 <template>
   <div class="stat-card wfl-card">
     <div class="stat-icon" :style="{ background: toneBg, color: toneColor }">
-      <el-icon :size="20"><component :is="icon" /></el-icon>
+      <el-icon :size="20">
+        <component :is="icon" />
+      </el-icon>
     </div>
     <div class="stat-info">
-      <div class="stat-value">{{ value }}</div>
-      <div class="stat-title">{{ title }}</div>
+      <div class="stat-value">
+        {{ value }}
+      </div>
+      <div class="stat-title">
+        {{ title }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = withDefaults(
   defineProps<{
-    title: string
-    value: string | number
-    icon?: string
-    tone?: 'primary' | 'success' | 'warning' | 'danger'
+    title: string;
+    value: string | number;
+    icon?: string;
+    tone?: 'primary' | 'success' | 'warning' | 'danger';
   }>(),
   {
     icon: 'TrendCharts',
     tone: 'primary',
   },
-)
+);
 
 const toneMap: Record<string, { bg: string; color: string }> = {
   primary: { bg: '#eef2ff', color: '#4f46e5' },
   success: { bg: '#ecfdf5', color: '#16a34a' },
   warning: { bg: '#fffbeb', color: '#d97706' },
   danger: { bg: '#fef2f2', color: '#dc2626' },
-}
+};
 
-const toneBg = computed(() => toneMap[props.tone].bg)
-const toneColor = computed(() => toneMap[props.tone].color)
+const toneBg = computed(() => toneMap[props.tone].bg);
+const toneColor = computed(() => toneMap[props.tone].color);
 </script>
 
 <style scoped>
@@ -66,4 +72,3 @@ const toneColor = computed(() => toneMap[props.tone].color)
   color: var(--wfl-text-secondary);
 }
 </style>
-

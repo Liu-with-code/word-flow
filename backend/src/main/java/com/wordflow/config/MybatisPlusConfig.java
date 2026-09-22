@@ -8,9 +8,6 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * MyBatis-Plus 配置。
- *
- * 模块职责：
- *   - 注册分页插件，使 Page 查询生效。
  */
 @Configuration
 public class MybatisPlusConfig {

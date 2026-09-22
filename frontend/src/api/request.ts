@@ -1,55 +1,55 @@
-import axios, { type AxiosError } from 'axios'
-import { ElMessage } from 'element-plus'
-import type { ApiResult } from '@/types/models'
+import axios, { type AxiosError } from 'axios';
+import { ElMessage } from 'element-plus';
+import type { ApiResult } from '@/types/models';
+import { clearSession, getToken } from '@/utils/auth';
 
 const http = axios.create({
   baseURL: '/api',
   timeout: 60000,
-})
+});
 
+/** 请求拦截器：统一注入 JWT。config.headers 为 AxiosHeaders 实例，用 set() 赋值以保留类型。 */
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('wordflow_token')
+  const token = getToken();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    config.headers.set('Authorization', `Bearer ${token}`);
   }
-  return config
-})
+  return config;
+});
 
 http.interceptors.response.use(
   (response) => {
-    const body = response.data as ApiResult<unknown>
+    const body = response.data as ApiResult<unknown>;
     if (body.code !== 200) {
-      ElMessage.error(body.message || '请求失败')
-      return Promise.reject(new Error(body.message))
+      ElMessage.error(body.message || '请求失败');
+      return Promise.reject(new Error(body.message));
     }
-    return response
+    return response;
   },
   (error: AxiosError<ApiResult<unknown>>) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('wordflow_token')
-      localStorage.removeItem('wordflow_user')
+      clearSession();
       if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+        window.location.href = '/login';
       }
     }
-    const message = error.response?.data?.message || error.message || '网络错误'
-    ElMessage.error(message)
-    return Promise.reject(error)
+    const message = error.response?.data?.message || error.message || '网络错误';
+    ElMessage.error(message);
+    return Promise.reject(error);
   },
-)
+);
 
 export async function apiGet<T>(url: string, params?: Record<string, unknown>): Promise<T> {
-  const response = await http.get<ApiResult<T>>(url, { params })
-  return response.data.data
+  const response = await http.get<ApiResult<T>>(url, { params });
+  return response.data.data;
 }
 
 export async function apiPost<T>(url: string, data?: unknown): Promise<T> {
-  const response = await http.post<ApiResult<T>>(url, data)
-  return response.data.data
+  const response = await http.post<ApiResult<T>>(url, data);
+  return response.data.data;
 }
 
 export async function apiPut<T>(url: string, data?: unknown): Promise<T> {
-  const response = await http.put<ApiResult<T>>(url, data)
-  return response.data.data
+  const response = await http.put<ApiResult<T>>(url, data);
+  return response.data.data;
 }
-

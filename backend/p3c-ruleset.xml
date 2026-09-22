@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="WordFlow Alibaba P3C Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        WordFlow 后端规约检查规则集。
+
+        规则来源：《阿里巴巴Java开发手册（嵩山版）》官方 PMD 实现（com.alibaba.p3c:p3c-pmd）。
+        裁剪说明：
+          - 排除 ClassMustHaveAuthorRule（类注释必须含 @author）：本项目为单人维护，
+            作者信息以 Git 提交记录为准，避免在每个类上重复冗余的 @author 标记；
+          - 排除 ServiceOrDaoClassShouldEndWithImplRule：AI 服务采用「策略模式 + 条件装配」
+            实现同一接口 AiService，类名体现所选 provider（mock / openai）比统一命名为 Impl
+            更利于排查线上问题，二者也并非传统意义上的业务 Service 实现。
+    </description>
+
+    <rule ref="rulesets/java/ali-comment.xml">
+        <exclude name="ClassMustHaveAuthorRule"/>
+    </rule>
+    <rule ref="rulesets/java/ali-concurrent.xml"/>
+    <rule ref="rulesets/java/ali-constant.xml"/>
+    <rule ref="rulesets/java/ali-exception.xml"/>
+    <rule ref="rulesets/java/ali-flowcontrol.xml"/>
+    <rule ref="rulesets/java/ali-naming.xml">
+        <exclude name="ServiceOrDaoClassShouldEndWithImplRule"/>
+    </rule>
+    <rule ref="rulesets/java/ali-oop.xml"/>
+    <rule ref="rulesets/java/ali-orm.xml"/>
+    <rule ref="rulesets/java/ali-other.xml"/>
+    <rule ref="rulesets/java/ali-set.xml"/>
+</ruleset>

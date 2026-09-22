@@ -14,7 +14,7 @@
         <div class="progress-info">
           <div class="progress-count">
             {{ today?.completed ?? 0 }} / {{ goalTotal }}
-           <span class="progress-unit">个单词</span>
+            <span class="progress-unit">个单词</span>
           </div>
           <el-button
             type="primary"
@@ -33,17 +33,31 @@
       </div>
 
       <div class="stats-grid">
-        <StatCard title="已学单词" :value="stats?.totalLearned ?? 0" icon="Notebook" tone="primary" />
+        <StatCard
+          title="已学单词"
+          :value="stats?.totalLearned ?? 0"
+          icon="Notebook"
+          tone="primary"
+        />
         <StatCard title="长期掌握" :value="stats?.masteredCount ?? 0" icon="Medal" tone="success" />
         <StatCard title="待复习" :value="stats?.dueCount ?? 0" icon="AlarmClock" tone="warning" />
-        <StatCard title="连续学习" :value="`${stats?.streakDays ?? 0} 天`" icon="Calendar" tone="danger" />
+        <StatCard
+          title="连续学习"
+          :value="`${stats?.streakDays ?? 0} 天`"
+          icon="Calendar"
+          tone="danger"
+        />
       </div>
     </div>
 
     <div class="cta-grid">
       <div class="wfl-card cta-card">
         <div class="cta-head">
-          <div class="cta-icon primary"><el-icon :size="22"><Reading /></el-icon></div>
+          <div class="cta-icon primary">
+            <el-icon :size="22">
+              <Reading />
+            </el-icon>
+          </div>
           <div>
             <div class="cta-title">今日新词</div>
             <div class="cta-desc">先看示例，再选释义，最后中英互译</div>
@@ -52,10 +66,15 @@
         <div v-if="today?.bookName" class="cta-book">
           <span class="cta-book-label">当前词书</span>
           <span class="cta-book-name">{{ today.bookName }}</span>
-          <router-link class="cta-book-link" to="/words">更换</router-link>
+          <router-link class="cta-book-link" to="/words"> 更换 </router-link>
         </div>
         <div v-if="today && today.words.length" class="word-chips">
-          <el-tag v-for="word in today.words.slice(0, 6)" :key="word.id" size="small" effect="plain">
+          <el-tag
+            v-for="word in today.words.slice(0, 6)"
+            :key="word.id"
+            size="small"
+            effect="plain"
+          >
             {{ word.word }}
           </el-tag>
           <span v-if="today.words.length > 6" class="more">+{{ today.words.length - 6 }}</span>
@@ -67,7 +86,11 @@
 
       <div class="wfl-card cta-card">
         <div class="cta-head">
-          <div class="cta-icon success"><el-icon :size="22"><Refresh /></el-icon></div>
+          <div class="cta-icon success">
+            <el-icon :size="22">
+              <Refresh />
+            </el-icon>
+          </div>
           <div>
             <div class="cta-title">艾宾浩斯复习</div>
             <div class="cta-desc">翻译短文，按遗忘曲线巩固旧词</div>
@@ -92,13 +115,19 @@
     <div class="wfl-card recent-card">
       <div class="recent-head">
         <span class="recent-title">最近作答</span>
-        <router-link class="recent-more" to="/stats">查看统计</router-link>
+        <router-link class="recent-more" to="/stats"> 查看统计 </router-link>
       </div>
-      <el-empty v-if="!recent.length" description="还没有学习记录，去学第一个单词吧" :image-size="72" />
+      <el-empty
+        v-if="!recent.length"
+        description="还没有学习记录，去学第一个单词吧"
+        :image-size="72"
+      />
       <ul v-else class="recent-list">
         <li v-for="(record, index) in recent" :key="index" class="recent-item">
           <span class="recent-word">{{ record.word }}</span>
-          <el-tag size="small" effect="plain">{{ stepLabel(record.stepType) }}</el-tag>
+          <el-tag size="small" effect="plain">
+            {{ stepLabel(record.stepType) }}
+          </el-tag>
           <span class="recent-result" :class="record.correct ? 'ok' : 'bad'">
             {{ record.correct ? '答对' : '答错' }}
           </span>
@@ -117,11 +146,15 @@
       align-center
     >
       <div class="setup-body">
-        <el-icon :size="46" color="#4f46e5"><Reading /></el-icon>
+        <el-icon :size="46" color="#4f46e5">
+          <Reading />
+        </el-icon>
         <div class="setup-title">
           {{ setupWelcome ? '欢迎回来，重新启航！' : '设置你的每日学习计划' }}
         </div>
-        <div v-if="setupWelcome" class="setup-desc">{{ setupWelcomeText }}</div>
+        <div v-if="setupWelcome" class="setup-desc">
+          {{ setupWelcomeText }}
+        </div>
         <div v-else class="setup-desc">
           先定个小目标：每天背多少新词、复习多少单词？之后随时可在「设置」页修改。
         </div>
@@ -137,164 +170,178 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="dismissSetup">暂不设置</el-button>
-        <el-button type="primary" :loading="setupSaving" @click="saveSetup">保存并开始</el-button>
+        <el-button @click="dismissSetup"> 暂不设置 </el-button>
+        <el-button type="primary" :loading="setupSaving" @click="saveSetup"> 保存并开始 </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
-import * as statisticsApi from '@/api/statistics'
-import * as learningApi from '@/api/learning'
-import * as reviewApi from '@/api/review'
-import * as booksApi from '@/api/books'
-import { useUserStore } from '@/stores/user'
-import { randomQuote } from '@/utils/quotes'
-import ProgressRing from '@/components/ProgressRing.vue'
-import StatCard from '@/components/StatCard.vue'
-import type { DashboardStats, RecentRecord, ReviewOverview, TodayPlan } from '@/types/models'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessageBox } from 'element-plus';
+import * as statisticsApi from '@/api/statistics';
+import * as learningApi from '@/api/learning';
+import * as reviewApi from '@/api/review';
+import * as booksApi from '@/api/books';
+import { useUserStore } from '@/stores/user';
+import { randomQuote } from '@/utils/quotes';
+import ProgressRing from '@/components/ProgressRing.vue';
+import StatCard from '@/components/StatCard.vue';
+import type { DashboardStats, RecentRecord, ReviewOverview, TodayPlan } from '@/types/models';
 
-const router = useRouter()
-const userStore = useUserStore()
-const motto = ref(randomQuote())
+const router = useRouter();
+const userStore = useUserStore();
+const motto = ref(randomQuote());
 
-const loading = ref(false)
-const stats = ref<DashboardStats | null>(null)
-const today = ref<TodayPlan | null>(null)
-const review = ref<ReviewOverview | null>(null)
-const recent = ref<RecentRecord[]>([])
+const loading = ref(false);
+const stats = ref<DashboardStats | null>(null);
+const today = ref<TodayPlan | null>(null);
+const review = ref<ReviewOverview | null>(null);
+const recent = ref<RecentRecord[]>([]);
 
-const SETUP_ABSENCE_DAYS = 7
-const showSetupDialog = ref(false)
-const setupWelcome = ref(false)
-const setupWelcomeText = ref('')
-const setupWordGoal = ref(20)
-const setupReviewGoal = ref(20)
-const setupSaving = ref(false)
+const SETUP_ABSENCE_DAYS = 7;
+const showSetupDialog = ref(false);
+const setupWelcome = ref(false);
+const setupWelcomeText = ref('');
+const setupWordGoal = ref(20);
+const setupReviewGoal = ref(20);
+const setupSaving = ref(false);
 
-const hour = new Date().getHours()
-const greeting = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
+const hour = new Date().getHours();
+const greeting = resolveGreeting(hour);
+
+/** 按时段返回问候语（避免嵌套三元表达式，提升可读性）。 */
+function resolveGreeting(currentHour: number): string {
+  if (currentHour < 6) {
+    return '夜深了';
+  }
+  if (currentHour < 12) {
+    return '早上好';
+  }
+  if (currentHour < 18) {
+    return '下午好';
+  }
+  return '晚上好';
+}
 
 /** 进度分母：有计划用计划总数，无计划用用户设置的每日目标。 */
-const goalTotal = computed(() => today.value?.total || userStore.user?.dailyWordGoal || 0)
+const goalTotal = computed(() => today.value?.total || userStore.user?.dailyWordGoal || 0);
 
 const todayPercent = computed(() => {
-  if (!goalTotal.value) return 0
-  return Math.round(((today.value?.completed ?? 0) / goalTotal.value) * 100)
-})
+  if (!goalTotal.value) return 0;
+  return Math.round(((today.value?.completed ?? 0) / goalTotal.value) * 100);
+});
 
 function onWindowFocus() {
-  loadAll()
+  loadAll();
 }
 
 onMounted(() => {
-  window.addEventListener('focus', onWindowFocus)
-  loadAll()
-})
+  window.addEventListener('focus', onWindowFocus);
+  loadAll();
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('focus', onWindowFocus)
-})
+  window.removeEventListener('focus', onWindowFocus);
+});
 
 async function loadAll() {
-  loading.value = true
+  loading.value = true;
   try {
     const [s, t, r, rec] = await Promise.all([
       statisticsApi.getDashboard(),
       learningApi.getTodayPlan(),
       reviewApi.getReviewOverview(),
       statisticsApi.getRecent(8),
-    ])
-    stats.value = s
-    today.value = t
-    review.value = r
-    recent.value = rec
-    await checkNightPrompt()
-    await checkSetupPrompt()
+    ]);
+    stats.value = s;
+    today.value = t;
+    review.value = r;
+    recent.value = rec;
+    await checkNightPrompt();
+    await checkSetupPrompt();
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 /** 首次登录或长期未登录时弹出每日目标设置；设置/暂不后不再频繁打扰。 */
 async function checkSetupPrompt() {
   try {
-    await userStore.fetchMe()
+    await userStore.fetchMe();
   } catch {
     // 网络异常不阻塞首页
   }
-  const user = userStore.user
-  if (!user) return
+  const { user } = userStore;
+  if (!user) return;
 
-  let shouldShow = false
-  let welcome = (stats.value?.totalLearned ?? 0) > 0
+  let shouldShow = false;
+  let welcome = (stats.value?.totalLearned ?? 0) > 0;
 
   // 服务端记录：setupPromptAt 为空 = 从未处理过设置弹窗
   if (!user.setupPromptAt) {
-    shouldShow = true
+    shouldShow = true;
   } else {
     // 已处理过：仅当长期未登录（>=7 天）时再次欢迎
-    const last = user.lastLoginAt ? new Date(user.lastLoginAt.replace(' ', 'T')) : null
+    const last = user.lastLoginAt ? new Date(user.lastLoginAt.replace(' ', 'T')) : null;
     if (last && Date.now() - last.getTime() >= SETUP_ABSENCE_DAYS * 86400000) {
-      shouldShow = true
-      welcome = true
+      shouldShow = true;
+      welcome = true;
     }
   }
-  if (!shouldShow) return
+  if (!shouldShow) return;
 
-  setupWordGoal.value = user.dailyWordGoal || 20
-  setupReviewGoal.value = user.dailyReviewGoal || 20
-  setupWelcome.value = welcome
+  setupWordGoal.value = user.dailyWordGoal || 20;
+  setupReviewGoal.value = user.dailyReviewGoal || 20;
+  setupWelcome.value = welcome;
   if (welcome) {
-    setupWelcomeText.value = await buildWelcomeText()
+    setupWelcomeText.value = await buildWelcomeText();
   }
-  showSetupDialog.value = true
+  showSetupDialog.value = true;
 }
 
 async function buildWelcomeText() {
   try {
-    const [books, s] = await Promise.all([booksApi.listBooks(), statisticsApi.getDashboard()])
-    const active = books.find((book) => book.active)
-    const bookName = active?.name || '四级核心词汇'
+    const [books, s] = await Promise.all([booksApi.listBooks(), statisticsApi.getDashboard()]);
+    const active = books.find((book) => book.active);
+    const bookName = active?.name || '四级核心词汇';
     return (
       `上次你在学习「${bookName}」，累计学习了 ${s.totalLearned} 个单词，` +
       `连续学习 ${s.streakDays} 天。重新启航前，再确认一下每日计划吧。`
-    )
+    );
   } catch {
-    return '好久不见，重新启航前，先确认一下每日计划吧。'
+    return '好久不见，重新启航前，先确认一下每日计划吧。';
   }
 }
 
 async function saveSetup() {
-  setupSaving.value = true
+  setupSaving.value = true;
   try {
     await userStore.updateProfile({
       dailyWordGoal: setupWordGoal.value,
       dailyReviewGoal: setupReviewGoal.value,
-    })
-    await userStore.markSetupPromptSeen()
-    showSetupDialog.value = false
-    await loadAll()
+    });
+    await userStore.markSetupPromptSeen();
+    showSetupDialog.value = false;
+    await loadAll();
   } finally {
-    setupSaving.value = false
+    setupSaving.value = false;
   }
 }
 
 async function dismissSetup() {
-  await userStore.markSetupPromptSeen()
-  showSetupDialog.value = false
+  await userStore.markSetupPromptSeen();
+  showSetupDialog.value = false;
 }
 
 /** 白天登录时：若检测到凌晨背过单词，询问是否提前加入今日复习。 */
 async function checkNightPrompt() {
   try {
-    const prompt = await reviewApi.getNightPrompt()
-    if (!prompt.show) return
-    let apply = false
+    const prompt = await reviewApi.getNightPrompt();
+    if (!prompt.show) return;
+    let apply = false;
     try {
       await ElMessageBox.confirm(
         `检测到你今天凌晨学习了 ${prompt.count} 个单词，是否将它们提前加入今日复习？`,
@@ -304,13 +351,13 @@ async function checkNightPrompt() {
           cancelButtonText: '暂不',
           type: 'info',
         },
-      )
-      apply = true
+      );
+      apply = true;
     } catch {
-      apply = false
+      apply = false;
     }
-    await reviewApi.answerNightPrompt(apply)
-    review.value = await reviewApi.getReviewOverview()
+    await reviewApi.answerNightPrompt(apply);
+    review.value = await reviewApi.getReviewOverview();
   } catch {
     // 弹窗失败不影响首页加载
   }
@@ -323,17 +370,17 @@ function stepLabel(step: string): string {
     TRANS_EN: '英译中',
     TRANS_ZH: '中译英',
     ARTICLE: '短文翻译',
-  }
-  return map[step] || step
+  };
+  return map[step] || step;
 }
 
 function formatTime(value: string): string {
-  const date = new Date(value.replace(' ', 'T'))
-  const now = new Date()
-  const sameDay = date.toDateString() === now.toDateString()
+  const date = new Date(value.replace(' ', 'T'));
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
   return sameDay
     ? date.toTimeString().slice(0, 5)
-    : date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
+    : date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
 }
 </script>
 

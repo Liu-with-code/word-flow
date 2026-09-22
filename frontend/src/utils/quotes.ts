@@ -4,8 +4,8 @@
  */
 
 export interface Quote {
-  text: string
-  source?: string
+  text: string;
+  source?: string;
 }
 
 /** 侧边栏等小空间使用的短句 */
@@ -20,7 +20,7 @@ export const shortQuotes: Quote[] = [
   { text: '行稳致远' },
   { text: '宁静致远' },
   { text: '久久为功' },
-]
+];
 
 /** 首页 / 登录 / 注册等大空间使用的完整短句 */
 export const fullQuotes: Quote[] = [
@@ -48,12 +48,12 @@ export const fullQuotes: Quote[] = [
   { text: '记忆会走远，但每一次重复，都是回家的路。' },
   { text: '与其羡慕别人的词典，不如慢慢翻厚自己的那一本。' },
   { text: '慢一点没关系，只要一直在走。' },
-]
+];
 
 export function randomShortQuote(): Quote {
-  return shortQuotes[Math.floor(Math.random() * shortQuotes.length)]
+  return shortQuotes[Math.floor(Math.random() * shortQuotes.length)];
 }
 
 export function randomQuote(): Quote {
-  return fullQuotes[Math.floor(Math.random() * fullQuotes.length)]
+  return fullQuotes[Math.floor(Math.random() * fullQuotes.length)];
 }

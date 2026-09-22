@@ -1,10 +1,13 @@
 package com.wordflow.module.learning.service;
 
+import com.wordflow.common.BusinessException;
 import com.wordflow.module.ai.AiModels.PracticeSentence;
 import com.wordflow.module.ai.AiModels.TranslationJudgement;
 import com.wordflow.module.ai.AiService;
 import com.wordflow.module.article.service.ArticleService;
+import com.wordflow.module.book.entity.Book;
 import com.wordflow.module.book.service.BookService;
+import com.wordflow.module.learning.dto.LearningDtos.AddWordsRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CheckEnRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CheckZhRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CompleteWordRequest;
@@ -17,6 +20,7 @@ import com.wordflow.module.learning.entity.LearningPlanWord;
 import com.wordflow.module.learning.mapper.LearningPlanMapper;
 import com.wordflow.module.learning.mapper.LearningPlanWordMapper;
 import com.wordflow.module.progress.service.ProgressService;
+import com.wordflow.module.user.entity.User;
 import com.wordflow.module.user.service.UserService;
 import com.wordflow.module.word.entity.Word;
 import com.wordflow.module.word.service.WordService;
@@ -26,14 +30,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -88,6 +93,61 @@ class LearningServiceTest {
                 progressService, articleService, aiService, FIXED_CLOCK);
     }
 
+    @Test
+    void shouldAppendWordsToTodayPlan_whenCapacityRemains() {
+        stubCurrentUser();
+        stubDailyGoal(10);
+        LearningPlan plan = new LearningPlan();
+        plan.setId(1L);
+        plan.setUserId(1L);
+        plan.setBookId(1L);
+        plan.setPlanDate(LocalDate.of(2026, 8, 23));
+        plan.setNewWordCount(3);
+        plan.setCompletedCount(0);
+        plan.setStatus("IN_PROGRESS");
+        when(planMapper.selectOne(any())).thenReturn(plan);
+        when(planWordMapper.selectList(any())).thenReturn(List.of(planWord(10L), planWord(11L), planWord(12L)));
+        when(wordService.getById(any())).thenReturn(word(20L, "abandon", "放弃"));
+        when(bookService.getById(1L)).thenReturn(book());
+
+        learningService.addWordsToToday(1L, new AddWordsRequest(List.of(20L, 20L)));
+
+        // 去重后只插入 1 条计划明细
+        verify(planWordMapper, times(1)).insert(any(LearningPlanWord.class));
+        verify(progressService).ensureProgress(1L, 20L);
+        assertThat(plan.getNewWordCount()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldRejectAppend_whenNoPlanToday() {
+        stubCurrentUser();
+        when(planMapper.selectOne(any())).thenReturn(null);
+
+        assertThatThrownBy(() -> learningService.addWordsToToday(1L, new AddWordsRequest(List.of(20L))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("今日还没有学习计划");
+    }
+
+    @Test
+    void shouldRejectAppend_whenGoalAlreadyReached() {
+        stubCurrentUser();
+        stubDailyGoal(3);
+        LearningPlan plan = new LearningPlan();
+        plan.setId(1L);
+        plan.setUserId(1L);
+        plan.setBookId(1L);
+        plan.setNewWordCount(3);
+        plan.setCompletedCount(3);
+        plan.setStatus("COMPLETED");
+        when(planMapper.selectOne(any())).thenReturn(plan);
+        // 今日目标 3 个且已全部完成 -> 剩余容量 0
+        when(planWordMapper.selectList(any())).thenReturn(List.of(
+                completedPlanWord(10L), completedPlanWord(11L), completedPlanWord(12L)));
+
+        assertThatThrownBy(() -> learningService.addWordsToToday(1L, new AddWordsRequest(List.of(20L))))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("今日目标已完成");
+    }
     @Test
     void shouldAdvance_whenChineseMeaningCorrect() {
         when(wordService.getById(1L)).thenReturn(word(1L, "ability", "能力"));
@@ -208,11 +268,43 @@ class LearningServiceTest {
     }
 
     private void stubCurrentUser() {
-        com.wordflow.module.user.entity.User user = new com.wordflow.module.user.entity.User();
+        User user = new User();
         user.setId(1L);
         user.setTimezone("Asia/Shanghai");
         user.setDayBoundaryHour(0);
         when(userService.getById(1L)).thenReturn(user);
+    }
+
+    /** 指定每日目标：复用 stubCurrentUser 创建的同一个用户对象，修改其可变字段。 */
+    private void stubDailyGoal(int goal) {
+        User user = userService.getById(1L);
+        if (user == null) {
+            stubCurrentUser();
+            user = userService.getById(1L);
+        }
+        user.setDailyWordGoal(goal);
+    }
+
+    private LearningPlanWord planWord(Long wordId) {
+        LearningPlanWord planWord = new LearningPlanWord();
+        planWord.setPlanId(1L);
+        planWord.setUserId(1L);
+        planWord.setWordId(wordId);
+        planWord.setStatus("PENDING");
+        return planWord;
+    }
+
+    private LearningPlanWord completedPlanWord(Long wordId) {
+        LearningPlanWord planWord = planWord(wordId);
+        planWord.setStatus("COMPLETED");
+        return planWord;
+    }
+
+    private Book book() {
+        Book book = new Book();
+        book.setId(1L);
+        book.setName("四级核心词汇");
+        return book;
     }
 
     private Word word(Long id, String text, String chinese) {

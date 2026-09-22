@@ -17,10 +17,18 @@
       <h1 class="auth-title">欢迎回来</h1>
       <p class="auth-subtitle">登录后继续你的学习计划</p>
 
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @keyup.enter="submit">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        @keyup.enter="submit"
+      >
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" size="large" placeholder="请输入用户名">
-            <template #prefix><el-icon><User /></el-icon></template>
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
           </el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
@@ -31,58 +39,66 @@
             show-password
             placeholder="请输入密码"
           >
-            <template #prefix><el-icon><Lock /></el-icon></template>
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
           </el-input>
         </el-form-item>
 
-        <el-button class="submit-btn" type="primary" size="large" :loading="loading" @click="submit">
+        <el-button
+          class="submit-btn"
+          type="primary"
+          size="large"
+          :loading="loading"
+          @click="submit"
+        >
           登 录
         </el-button>
       </el-form>
 
       <div class="auth-footer">
         还没有账号？
-        <router-link class="auth-link" to="/register">立即注册</router-link>
+        <router-link class="auth-link" to="/register"> 立即注册 </router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import type { FormInstance, FormRules } from 'element-plus'
-import { useUserStore } from '@/stores/user'
-import { randomQuote } from '@/utils/quotes'
+import { reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import type { FormInstance, FormRules } from 'element-plus';
+import { useUserStore } from '@/stores/user';
+import { randomQuote } from '@/utils/quotes';
 
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
-const slogan = ref(randomQuote())
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
+const slogan = ref(randomQuote());
 
-const formRef = ref<FormInstance>()
-const loading = ref(false)
+const formRef = ref<FormInstance>();
+const loading = ref(false);
 const form = reactive({
   username: '',
   password: '',
-})
+});
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-}
+};
 
 async function submit() {
-  if (!formRef.value) return
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) return
-  loading.value = true
+  if (!formRef.value) return;
+  const valid = await formRef.value.validate().catch(() => false);
+  if (!valid) return;
+  loading.value = true;
   try {
-    await userStore.login(form.username, form.password)
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/'
-    router.replace(redirect)
+    await userStore.login(form.username, form.password);
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/';
+    router.replace(redirect);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 </script>

@@ -36,15 +36,31 @@ import java.util.function.Consumer;
 
 /**
  * OpenAI 兼容大模型实现（Chat Completions）。
- *
- * 模块职责：
- *   - 通过 RestClient 调用 /chat/completions，统一解析 JSON 输出。
- *   - 兼容 OpenAI / DeepSeek / 通义千问等 OpenAI 协议服务。
  */
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "ai.provider", havingValue = "openai")
 public class OpenAiService implements AiService {
+
+    /** HTTP 成功状态码 */
+    private static final int HTTP_OK = 200;
+
+    /** SSE 数据结束标记 */
+    private static final String SSE_DONE = "[DONE]";
+
+    /** 模型返回的 JSON 字段名 */
+    private static final String FIELD_ERRORS = "errors";
+    private static final String FIELD_SEGMENT = "segment";
+    private static final String FIELD_EXPECTED = "expected";
+    private static final String FIELD_USER = "user";
+    private static final String FIELD_SUGGESTION = "suggestion";
+    private static final String FIELD_MODEL = "model";
+    private static final String FIELD_TEMPERATURE = "temperature";
+    private static final String FIELD_STREAM = "stream";
+    private static final String FIELD_MESSAGES = "messages";
+
+    /** 预估集合容量：请求体字段数较少 */
+    private static final int MAP_INIT_CAPACITY = 8;
 
     private final AiProperties aiProperties;
     private final AiLogMapper aiLogMapper;
@@ -97,12 +113,12 @@ public class OpenAiService implements AiService {
         String comment = node.path("comment").asText("");
         String standard = node.path("standardAnswer").asText(request.standardAnswer());
         List<AiModels.ErrorItem> errors = new java.util.ArrayList<>();
-        for (JsonNode item : node.path("errors")) {
+        for (JsonNode item : node.path(FIELD_ERRORS)) {
             errors.add(new AiModels.ErrorItem(
-                    item.path("segment").asText(""),
-                    item.path("expected").asText(""),
-                    item.path("user").asText(""),
-                    item.path("suggestion").asText("")));
+                    item.path(FIELD_SEGMENT).asText(""),
+                    item.path(FIELD_EXPECTED).asText(""),
+                    item.path(FIELD_USER).asText(""),
+                    item.path(FIELD_SUGGESTION).asText("")));
         }
         return new TranslationJudgement(passed, score, comment, standard, errors);
     }
@@ -197,11 +213,11 @@ public class OpenAiService implements AiService {
             String url = aiProperties.getBaseUrl().endsWith("/")
                     ? aiProperties.getBaseUrl() + "chat/completions"
                     : aiProperties.getBaseUrl() + "/chat/completions";
-            Map<String, Object> body = new HashMap<>();
-            body.put("model", aiProperties.getModel());
-            body.put("temperature", 0.4);
-            body.put("stream", true);
-            body.put("messages", List.of(
+            Map<String, Object> body = new HashMap<>(MAP_INIT_CAPACITY);
+            body.put(FIELD_MODEL, aiProperties.getModel());
+            body.put(FIELD_TEMPERATURE, 0.4);
+            body.put(FIELD_STREAM, true);
+            body.put(FIELD_MESSAGES, List.of(
                     Map.of("role", "system", "content", system),
                     Map.of("role", "user", "content", user)));
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
@@ -212,7 +228,7 @@ public class OpenAiService implements AiService {
                     .build();
             HttpResponse<InputStream> response = client.send(request,
                     HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() != 200) {
+            if (response.statusCode() != HTTP_OK) {
                 String errorBody = new String(response.body().readAllBytes(), StandardCharsets.UTF_8);
                 throw new IllegalStateException("HTTP " + response.statusCode() + ": " + errorBody);
             }
@@ -228,7 +244,7 @@ public class OpenAiService implements AiService {
                     if (data.isEmpty()) {
                         continue;
                     }
-                    if ("[DONE]".equals(data)) {
+                    if (SSE_DONE.equals(data)) {
                         break;
                     }
                     JsonNode node = objectMapper.readTree(data);

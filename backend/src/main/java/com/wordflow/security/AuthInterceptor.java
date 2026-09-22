@@ -15,9 +15,6 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * JWT 认证拦截器。
- *
- * 模块职责：
- *   - 校验 Authorization: Bearer <token>，通过后写入 {@link UserContext}。
  */
 @Component
 @RequiredArgsConstructor

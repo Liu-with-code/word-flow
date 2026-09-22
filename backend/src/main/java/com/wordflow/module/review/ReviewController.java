@@ -3,14 +3,18 @@ package com.wordflow.module.review;
 import com.wordflow.common.Result;
 import com.wordflow.module.article.dto.ArticleDtos.ArticleCheckRequest;
 import com.wordflow.module.article.dto.ArticleDtos.ArticleCheckResult;
-import com.wordflow.module.review.dto.ReviewDtos.ReviewOverviewResponse;
 import com.wordflow.module.review.dto.ReviewDtos.NightPromptRequest;
 import com.wordflow.module.review.dto.ReviewDtos.NightPromptResponse;
+import com.wordflow.module.review.dto.ReviewDtos.ReviewOverviewResponse;
 import com.wordflow.module.review.dto.ReviewDtos.ReviewStartResponse;
+import com.wordflow.module.review.dto.ReviewDtos.WarmupMarkRequest;
+import com.wordflow.module.review.dto.ReviewDtos.WarmupMarkResponse;
+import com.wordflow.module.review.dto.ReviewDtos.WarmupResponse;
 import com.wordflow.module.review.service.ReviewService;
 import com.wordflow.security.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +39,19 @@ public class ReviewController {
         return Result.ok(reviewService.overview(UserContext.getUserId()));
     }
 
+    @Operation(summary = "复习热身：到期单词快速自测")
+    @GetMapping("/warmup")
+    public Result<WarmupResponse> warmup() {
+        return Result.ok(reviewService.warmup(UserContext.getUserId()));
+    }
+
+    @Operation(summary = "复习热身作答：记得则推进复习阶段，不熟则留待短文复习")
+    @PostMapping("/warmup")
+    public Result<WarmupMarkResponse> markWarmup(@Valid @RequestBody WarmupMarkRequest request) {
+        return Result.ok(reviewService.markWarmup(
+                UserContext.getUserId(), request.wordId(), request.remembered()));
+    }
+
     @Operation(summary = "开始复习（按艾宾浩斯曲线生成短文）")
     @PostMapping("/start")
     public Result<ReviewStartResponse> start() {
@@ -56,7 +73,7 @@ public class ReviewController {
 
     @Operation(summary = "批改复习短文")
     @PostMapping("/check")
-    public Result<ArticleCheckResult> check(@RequestBody ArticleCheckRequest request) {
+    public Result<ArticleCheckResult> check(@Valid @RequestBody ArticleCheckRequest request) {
         return Result.ok(reviewService.checkArticle(UserContext.getUserId(), request));
     }
 }

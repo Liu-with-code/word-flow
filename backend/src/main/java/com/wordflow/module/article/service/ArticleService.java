@@ -25,10 +25,6 @@ import java.util.List;
 
 /**
  * 短文服务。
- *
- * 模块职责：
- *   - 调用 AI 生成「今日总结短文 / 复习短文」；
- *   - 调用 AI 批改用户译文，保存每次尝试，返回错误明细。
  */
 @Service
 @RequiredArgsConstructor

@@ -18,19 +18,38 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 
 /**
- * 用户服务。
- *
- * 模块职责：
- *   - 注册、登录校验、用户资料查询与更新。
+ * 用户服务：注册、登录校验、资料更新与头像上传。
  */
 @Service
 public class UserService {
 
+    /** 头像最大字节数（2MB） */
+    private static final long MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
+    /** 每日新词/复习目标允许的取值范围 */
+    private static final int MIN_GOAL = 1;
+    private static final int MAX_GOAL = 100;
+
+    /** 头像访问路径前缀（与 WebConfig 的静态资源映射保持一致） */
+    private static final String AVATAR_URL_PREFIX = "/uploads/avatar/";
+
+    /** 头像存储子目录 */
+    private static final String AVATAR_DIR_NAME = "avatar";
+
+    /** 图片格式：扩展名与对应的 MIME 关键字 */
+    private static final String EXT_JPG = ".jpg";
+    private static final String EXT_PNG = ".png";
+    private static final String EXT_WEBP = ".webp";
+    private static final String EXT_GIF = ".gif";
+    private static final String MIME_JPEG = "jpeg";
+    private static final String MIME_JPG = "jpg";
+    private static final String MIME_PNG = "png";
+    private static final String MIME_WEBP = "webp";
+    private static final String MIME_GIF = "gif";
+
     private final UserMapper userMapper;
     private final String uploadDir;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    private static final long MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
     public UserService(UserMapper userMapper,
                        @Value("${wordflow.upload-dir:uploads}") String uploadDir) {
@@ -88,13 +107,13 @@ public class UserService {
             user.setAvatarUrl(request.avatarUrl());
         }
         if (request.dailyWordGoal() != null) {
-            if (request.dailyWordGoal() < 1 || request.dailyWordGoal() > 100) {
+            if (request.dailyWordGoal() < MIN_GOAL || request.dailyWordGoal() > MAX_GOAL) {
                 throw new BusinessException(ResultCode.BAD_REQUEST, "每日目标须在 1-100 之间");
             }
             user.setDailyWordGoal(request.dailyWordGoal());
         }
         if (request.dailyReviewGoal() != null) {
-            if (request.dailyReviewGoal() < 1 || request.dailyReviewGoal() > 100) {
+            if (request.dailyReviewGoal() < MIN_GOAL || request.dailyReviewGoal() > MAX_GOAL) {
                 throw new BusinessException(ResultCode.BAD_REQUEST, "复习目标须在 1-100 之间");
             }
             user.setDailyReviewGoal(request.dailyReviewGoal());
@@ -122,14 +141,14 @@ public class UserService {
         }
         String ext = resolveImageExtension(file);
         try {
-            Path dir = Path.of(uploadDir, "avatar").toAbsolutePath().normalize();
+            Path dir = Path.of(uploadDir, AVATAR_DIR_NAME).toAbsolutePath().normalize();
             Files.createDirectories(dir);
             String filename = "avatar_" + userId + "_" + System.currentTimeMillis() + ext;
             Path target = dir.resolve(filename).normalize();
             file.transferTo(target);
 
             User user = getById(userId);
-            user.setAvatarUrl("/uploads/avatar/" + filename);
+            user.setAvatarUrl(AVATAR_URL_PREFIX + filename);
             userMapper.updateById(user);
             return toVO(user);
         } catch (IOException ex) {
@@ -166,33 +185,33 @@ public class UserService {
         String contentType = file.getContentType();
         if (contentType != null) {
             String type = contentType.toLowerCase();
-            if (type.contains("jpeg") || type.contains("jpg")) {
-                return ".jpg";
+            if (type.contains(MIME_JPEG) || type.contains(MIME_JPG)) {
+                return EXT_JPG;
             }
-            if (type.contains("png")) {
-                return ".png";
+            if (type.contains(MIME_PNG)) {
+                return EXT_PNG;
             }
-            if (type.contains("webp")) {
-                return ".webp";
+            if (type.contains(MIME_WEBP)) {
+                return EXT_WEBP;
             }
-            if (type.contains("gif")) {
-                return ".gif";
+            if (type.contains(MIME_GIF)) {
+                return EXT_GIF;
             }
         }
         String name = file.getOriginalFilename();
         if (name != null) {
             String lower = name.toLowerCase();
-            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
-                return ".jpg";
+            if (lower.endsWith(EXT_JPG) || lower.endsWith(MIME_JPEG)) {
+                return EXT_JPG;
             }
-            if (lower.endsWith(".png")) {
-                return ".png";
+            if (lower.endsWith(EXT_PNG)) {
+                return EXT_PNG;
             }
-            if (lower.endsWith(".webp")) {
-                return ".webp";
+            if (lower.endsWith(EXT_WEBP)) {
+                return EXT_WEBP;
             }
-            if (lower.endsWith(".gif")) {
-                return ".gif";
+            if (lower.endsWith(EXT_GIF)) {
+                return EXT_GIF;
             }
         }
         throw new BusinessException(ResultCode.BAD_REQUEST, "仅支持 JPG/PNG/WebP/GIF 格式图片");

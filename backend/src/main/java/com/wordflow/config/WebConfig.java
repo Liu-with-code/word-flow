@@ -13,14 +13,16 @@ import java.nio.file.Paths;
 
 /**
  * Web MVC 配置。
- *
- * 模块职责：
- *   - CORS 跨域配置（开发环境放开，生产请收紧域名白名单）。
- *   - 注册登录拦截器，除白名单外所有 /api/** 请求都要求 JWT。
  */
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
+
+    /** 静态资源目录 URI 的结尾符（resource location 必须以分隔符结尾） */
+    private static final String RESOURCE_LOCATION_SUFFIX = "/";
+
+    /** 头像等静态资源的访问前缀 */
+    private static final String UPLOAD_URL_PATTERN = "/uploads/**";
 
     private final AuthInterceptor authInterceptor;
     @Value("${wordflow.upload-dir:uploads}")
@@ -32,10 +34,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String location = Paths.get(uploadDir).toAbsolutePath().normalize().toUri().toString();
-        if (!location.endsWith("/")) {
-            location += "/";
+        if (!location.endsWith(RESOURCE_LOCATION_SUFFIX)) {
+            location += RESOURCE_LOCATION_SUFFIX;
         }
-        registry.addResourceHandler("/uploads/**").addResourceLocations(location);
+        registry.addResourceHandler(UPLOAD_URL_PATTERN).addResourceLocations(location);
     }
 
     @Override

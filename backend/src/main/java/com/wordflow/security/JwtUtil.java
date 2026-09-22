@@ -12,9 +12,6 @@ import java.util.Date;
 
 /**
  * JWT 工具类。
- *
- * 模块职责：
- *   - 生成、解析登录令牌。令牌中仅存 userId，无敏感信息。
  */
 @Component
 public class JwtUtil {

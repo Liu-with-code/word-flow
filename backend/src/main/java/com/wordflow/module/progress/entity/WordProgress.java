@@ -11,9 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * 用户单词进度实体，对应表 learn_progress。
- *
- * 模块职责：
- *   - 记录单词学习状态、答对/答错次数与艾宾浩斯复习时间。
  */
 @Data
 @TableName("learn_progress")

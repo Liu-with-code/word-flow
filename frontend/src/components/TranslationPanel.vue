@@ -1,8 +1,12 @@
 <template>
   <div class="translation-panel">
     <div class="sentence-card wfl-card">
-      <div class="sentence-label">{{ direction === 'en2zh' ? '请翻译下面的英文' : '请翻译下面的中文' }}</div>
-      <div class="sentence-text">{{ sentence }}</div>
+      <div class="sentence-label">
+        {{ direction === 'en2zh' ? '请翻译下面的英文' : '请翻译下面的中文' }}
+      </div>
+      <div class="sentence-text">
+        {{ sentence }}
+      </div>
     </div>
 
     <div class="input-card wfl-card">
@@ -17,7 +21,7 @@
         <span v-if="result && result.correct" class="pass-tag">
           <el-icon><CircleCheckFilled /></el-icon> 已通过
         </span>
-        <el-button :disabled="loading" plain @click="emit('hint')">我不会</el-button>
+        <el-button :disabled="loading" plain @click="emit('hint')"> 我不会 </el-button>
         <el-button type="primary" :loading="loading" :disabled="!text.trim()" @click="submit">
           {{ result && !result.correct ? '重新提交' : '提交翻译' }}
         </el-button>
@@ -31,16 +35,12 @@
     </div>
 
     <!-- 参考译文（我不会） -->
-    <el-alert
-      v-if="hint"
-      type="info"
-      :closable="false"
-      class="feedback"
-      show-icon
-    >
+    <el-alert v-if="hint" type="info" :closable="false" class="feedback" show-icon>
       <template #title>
         <div class="feedback-title">参考译文（大模型生成）</div>
-        <div class="feedback-standard">{{ hint }}</div>
+        <div class="feedback-standard">
+          {{ hint }}
+        </div>
         <div class="feedback-note">先理解参考译文，然后再次尝试翻译。</div>
       </template>
     </el-alert>
@@ -86,17 +86,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { StepResult } from '@/types/models'
+import { ref } from 'vue';
+import type { StepResult } from '@/types/models';
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
-    direction: 'en2zh' | 'zh2en'
-    sentence: string
-    result?: StepResult | null
-    loading?: boolean
-    streaming?: string
-    hint?: string | null
+    direction: 'en2zh' | 'zh2en';
+    sentence: string;
+    result?: StepResult | null;
+    loading?: boolean;
+    streaming?: string;
+    hint?: string | null;
   }>(),
   {
     result: null,
@@ -104,18 +104,18 @@ const props = withDefaults(
     streaming: '',
     hint: null,
   },
-)
+);
 
 const emit = defineEmits<{
-  (event: 'submit', translation: string): void
-  (event: 'hint'): void
-}>()
+  (event: 'submit', translation: string): void;
+  (event: 'hint'): void;
+}>();
 
-const text = ref('')
+const text = ref('');
 
 function submit() {
   if (text.value.trim()) {
-    emit('submit', text.value.trim())
+    emit('submit', text.value.trim());
   }
 }
 </script>

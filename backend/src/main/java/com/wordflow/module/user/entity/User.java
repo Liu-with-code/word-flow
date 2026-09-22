@@ -12,9 +12,6 @@ import java.time.LocalDateTime;
 
 /**
  * 用户实体，对应表 sys_user。
- *
- * 模块职责：
- *   - 用户基础信息：登录名、密码哈希、昵称、每日目标等。
  */
 @Data
 @TableName("sys_user")

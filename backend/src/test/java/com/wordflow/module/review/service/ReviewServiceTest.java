@@ -11,6 +11,8 @@ import com.wordflow.module.progress.service.ProgressService;
 import com.wordflow.module.review.dto.ReviewDtos.NightPromptResponse;
 import com.wordflow.module.review.dto.ReviewDtos.ReviewOverviewResponse;
 import com.wordflow.module.review.dto.ReviewDtos.ReviewStartResponse;
+import com.wordflow.module.review.dto.ReviewDtos.WarmupMarkResponse;
+import com.wordflow.module.review.dto.ReviewDtos.WarmupResponse;
 import com.wordflow.module.user.entity.User;
 import com.wordflow.module.user.mapper.UserMapper;
 import com.wordflow.module.word.entity.Word;
@@ -51,6 +53,9 @@ class ReviewServiceTest {
             Clock.fixed(Instant.parse("2026-08-23T06:00:00Z"), ZoneId.of("Asia/Shanghai"));
     private static final Clock NIGHT_CLOCK =
             Clock.fixed(Instant.parse("2026-08-22T21:00:00Z"), ZoneId.of("Asia/Shanghai"));
+
+    /** 固定时钟对应的用户本地时刻（Asia/Shanghai），用于构造复习时间夹具 */
+    private static final LocalDateTime CLOCK_BASE = LocalDateTime.of(2026, 8, 23, 14, 0);
 
     @Mock
     private ProgressService progressService;
@@ -100,8 +105,9 @@ class ReviewServiceTest {
         ZoneId zone = ZoneId.of("Asia/Shanghai");
         when(progressService.zoneOf(1L)).thenReturn(zone);
         when(userMapper.selectById(1L)).thenReturn(user(0, null));
-        WordProgress urgent = progress(1, LocalDateTime.now().minusDays(3), 1);
-        WordProgress normal = progress(2, LocalDateTime.now().plusDays(1), 5);
+        // 紧急度以注入的固定时钟（2026-08-23 14:00）为基准计算逾期天数
+        WordProgress urgent = progress(1, CLOCK_BASE.minusDays(3), 1);
+        WordProgress normal = progress(2, CLOCK_BASE.plusDays(1), 5);
         when(progressService.listDueProgress(1L)).thenReturn(new ArrayList<>(List.of(urgent, normal)));
         when(wordService.getById(1L)).thenReturn(word(1L, "urgent"));
         when(wordService.getById(2L)).thenReturn(word(2L, "normal"));
@@ -240,6 +246,59 @@ class ReviewServiceTest {
         assertThat(result.passed()).isTrue();
         verify(progressService).advanceReview(1L, 1L);
         verify(progressService).advanceReview(1L, 2L);
+    }
+
+    @Test
+    void shouldReturnWarmupWords_sortedByUrgency() {
+        when(progressService.zoneOf(1L)).thenReturn(ZoneId.of("Asia/Shanghai"));
+        WordProgress urgent = progress(1, CLOCK_BASE.minusDays(3), 1);
+        WordProgress normal = progress(2, CLOCK_BASE, 5);
+        when(progressService.listDueProgress(1L)).thenReturn(new ArrayList<>(List.of(normal, urgent)));
+        when(wordService.getById(1L)).thenReturn(word(1L, "urgent"));
+        when(wordService.getById(2L)).thenReturn(word(2L, "normal"));
+        when(wordService.toVO(any())).thenAnswer(invocation -> {
+            Word entity = invocation.getArgument(0);
+            return new com.wordflow.module.word.dto.WordVO(entity.getId(), 1L, entity.getWord(),
+                    "", entity.getChinese(), "", "", "", 3, "CET4");
+        });
+
+        WarmupResponse response = reviewService.warmup(1L);
+
+        assertThat(response.dueCount()).isEqualTo(2);
+        assertThat(response.words()).hasSize(2);
+        // 逾期 + 早期阶段优先展示
+        assertThat(response.words().get(0).word().word()).isEqualTo("urgent");
+        assertThat(response.words().get(0).priority()).isEqualTo(4);
+    }
+
+    @Test
+    void shouldAdvanceStage_whenWarmupRemembered() {
+        WordProgress progress = progress(1, LocalDateTime.now(), 2);
+        progress.setStatus("REVIEWING");
+        when(progressService.ensureProgress(1L, 1L)).thenReturn(progress);
+        when(progressService.countDue(1L)).thenReturn(3L);
+
+        WarmupMarkResponse response = reviewService.markWarmup(1L, 1L, true);
+
+        assertThat(response.remembered()).isTrue();
+        assertThat(response.remaining()).isEqualTo(3);
+        verify(progressService).recordAnswer(eq(1L), eq(1L), eq("REVIEW"),
+                eq("REVIEW_WARMUP"), eq(true), eq("记得"), any());
+        verify(progressService).advanceReview(1L, 1L);
+    }
+
+    @Test
+    void shouldKeepStage_whenWarmupNotRemembered() {
+        WordProgress progress = progress(1, LocalDateTime.now(), 2);
+        progress.setStatus("REVIEWING");
+        when(progressService.ensureProgress(1L, 1L)).thenReturn(progress);
+        when(progressService.countDue(1L)).thenReturn(5L);
+
+        WarmupMarkResponse response = reviewService.markWarmup(1L, 1L, false);
+
+        assertThat(response.remembered()).isFalse();
+        assertThat(response.stage()).isEqualTo(2);
+        verify(progressService, never()).advanceReview(any(), any());
     }
 
     private User user(int boundary, LocalDate promptDate) {

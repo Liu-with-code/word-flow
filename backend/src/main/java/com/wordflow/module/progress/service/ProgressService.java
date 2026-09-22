@@ -24,11 +24,6 @@ import java.util.Objects;
 /**
  * 单词进度服务（核心调度逻辑）。
  *
- * 模块职责：
- *   - 维护用户-单词进度；
- *   - 记录每一步作答流水；
- *   - 按艾宾浩斯遗忘曲线安排复习时间。
- *
  * 艾宾浩斯间隔（依据科普中国整理的经典复习周期）：
  *   [1, 2, 4, 7, 15, 30] 天，即学完后第 1/3/7/14/29/59 天左右复习，
  *   全部通过后进入 COMPLETE（长期记忆）。
@@ -37,7 +32,6 @@ import java.util.Objects;
  *   - 不写死服务器时间；每个用户使用自己的时区（sys_user.timezone）；
  *   - 复习到期时间按「用户学习日 + 间隔天数」锚定到用户所在时区的日边界；
  *   - 日边界小时来自 sys_user.day_boundary_hour（0=不启用，凌晨该点前背的词算前一天）。
- *
  */
 @Service
 @RequiredArgsConstructor
@@ -269,5 +263,26 @@ public class ProgressService {
                 Wrappers.<WordProgress>lambdaQuery()
                         .eq(WordProgress::getUserId, userId)
                         .eq(WordProgress::getStatus, STATUS_COMPLETE));
+    }
+
+    /**
+     * 薄弱单词 ID：答错次数多的优先，用于练习句自然复现。
+     *
+     * @param userId 用户 ID
+     * @param limit  条数上限
+     */
+    public List<Long> listWeakWordIds(Long userId, int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        return progressMapper.selectList(
+                        Wrappers.<WordProgress>lambdaQuery()
+                                .eq(WordProgress::getUserId, userId)
+                                .gt(WordProgress::getWrongCount, 0)
+                                .orderByDesc(WordProgress::getWrongCount)
+                                .orderByAsc(WordProgress::getCorrectCount)
+                                .last("LIMIT " + limit)).stream()
+                .map(WordProgress::getWordId)
+                .toList();
     }
 }

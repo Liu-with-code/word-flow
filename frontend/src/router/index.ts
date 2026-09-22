@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useUserStore } from '@/stores/user'
+import { createRouter, createWebHistory } from 'vue-router';
+import { useUserStore } from '@/stores/user';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -52,6 +52,12 @@ const router = createRouter({
           meta: { title: '词书' },
         },
         {
+          path: 'mistakes',
+          name: 'mistakes',
+          component: () => import('@/views/MistakesView.vue'),
+          meta: { title: '错题本' },
+        },
+        {
           path: 'stats',
           name: 'stats',
           component: () => import('@/views/StatsView.vue'),
@@ -72,33 +78,33 @@ const router = createRouter({
       meta: { title: '页面不存在' },
     },
   ],
-})
+});
 
 router.beforeEach((to) => {
-  const userStore = useUserStore()
-  document.title = `${String(to.meta.title || '')} · WordFlow 词流`
+  const userStore = useUserStore();
+  document.title = `${String(to.meta.title || '')} · WordFlow 词流`;
 
   // 已登录时：开屏页与登录/注册页都不再展示
   if (userStore.token) {
     if (to.name === 'splash' || to.name === 'login' || to.name === 'register') {
-      return { name: 'home' }
+      return { name: 'home' };
     }
-    return true
+    return true;
   }
 
   // 未登录：每次冷启动先展示一次开屏
   if (!sessionStorage.getItem('wordflow_splash_seen')) {
-    sessionStorage.setItem('wordflow_splash_seen', '1')
+    sessionStorage.setItem('wordflow_splash_seen', '1');
     if (to.name !== 'splash') {
-      return { name: 'splash', query: { next: to.fullPath } }
+      return { name: 'splash', query: { next: to.fullPath } };
     }
-    return true
+    return true;
   }
 
   if (to.meta.requiresAuth) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+    return { name: 'login', query: { redirect: to.fullPath } };
   }
-  return true
-})
+  return true;
+});
 
-export default router
+export default router;

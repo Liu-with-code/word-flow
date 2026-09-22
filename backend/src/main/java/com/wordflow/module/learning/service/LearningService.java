@@ -14,6 +14,7 @@ import com.wordflow.module.article.entity.LearningArticle;
 import com.wordflow.module.article.service.ArticleService;
 import com.wordflow.module.book.entity.Book;
 import com.wordflow.module.book.service.BookService;
+import com.wordflow.module.learning.dto.LearningDtos.AddWordsRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CheckEnRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CheckZhRequest;
 import com.wordflow.module.learning.dto.LearningDtos.CompleteWordRequest;
@@ -45,11 +46,13 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * 每日学习服务（核心业务流程）。
@@ -58,13 +61,28 @@ import java.util.function.Consumer;
  *   PREVIEW(完整示例) -> CHOOSE_ZH(看英选中) -> CHOOSE_EN(看中选英)
  *   -> TRANS_EN(英译中, AI批改) -> TRANS_ZH(中译英, AI批改)
  *   -> COMPLETE_WORD -> 全部完成后生成总结短文 -> ARTICLE(全文翻译批改, >=60 通过)
- *
  */
 @Service
 @RequiredArgsConstructor
 public class LearningService {
 
     private static final String SESSION_DAILY = "DAILY_LEARN";
+
+    /** 练习句缓存容量上限，超出后按 LRU 淘汰 */
+    private static final int PRACTICE_CACHE_CAPACITY = 512;
+
+    /** 练习句中自然复现的薄弱单词数量上限 */
+    private static final int PRACTICE_REVIEW_WORDS = 5;
+
+    /** 每日目标取值范围与默认值 */
+    private static final int MIN_DAILY_GOAL = 1;
+    private static final int MAX_DAILY_GOAL = 100;
+    private static final int DEFAULT_DAILY_GOAL = 20;
+
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_COMPLETED = "COMPLETED";
+    private static final String PLAN_STATUS_COMPLETED = "COMPLETED";
+    private static final String PLAN_STATUS_IN_PROGRESS = "IN_PROGRESS";
 
     private final LearningPlanMapper planMapper;
     private final LearningPlanWordMapper planWordMapper;
@@ -76,27 +94,38 @@ public class LearningService {
     private final AiService aiService;
     private final Clock clock;
 
-    /** 练习句缓存：key = userId:wordId，避免翻译步骤与生成步骤不一致 */
-    private final Map<String, PracticeSentence> practiceCache = new ConcurrentHashMap<>();
+    /**
+     * 练习句缓存：key = userId:wordId，用于保证翻译步骤与生成步骤使用同一句子。
+     *
+     * 采用同步访问的 LRU 有界缓存（{@link LinkedHashMap}），
+     * 超过 {@value #PRACTICE_CACHE_CAPACITY} 条后淘汰最久未使用的记录。
+     */
+    private final Map<String, PracticeSentence> practiceCache =
+            new LinkedHashMap<>(16, 0.75f, true) {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, PracticeSentence> eldest) {
+                    return size() > PRACTICE_CACHE_CAPACITY;
+                }
+            };
 
     public TodayPlanResponse getToday(Long userId) {
+        User user = userService.getById(userId);
+        int dailyGoal = normalizeDailyGoal(user.getDailyWordGoal());
         LearningPlan plan = findTodayPlan(userId);
         if (plan == null) {
-            User user = userService.getById(userId);
             Book activeBook = bookService.getById(user.getActiveBookId() == null ? 1L : user.getActiveBookId());
             return new TodayPlanResponse(LocalDate.now(), 0, 0, 0, List.of(),
-                    activeBook.getId(), activeBook.getName());
+                    activeBook.getId(), activeBook.getName(), dailyGoal);
         }
-        List<LearningPlanWord> planWords = planWordMapper.selectList(
-                Wrappers.<LearningPlanWord>lambdaQuery()
-                        .eq(LearningPlanWord::getPlanId, plan.getId())
-                        .orderByAsc(LearningPlanWord::getOrderNo));
+        List<LearningPlanWord> planWords = listPlanWords(plan.getId());
         List<WordVO> words = planWords.stream()
                 .map(pw -> wordService.toVO(wordService.getById(pw.getWordId())))
                 .toList();
         int currentIndex = 0;
         for (int i = 0; i < planWords.size(); i++) {
-            if ("PENDING".equals(planWords.get(i).getStatus())) {
+            if (STATUS_PENDING.equals(planWords.get(i).getStatus())) {
                 currentIndex = i;
                 break;
             }
@@ -105,7 +134,7 @@ public class LearningService {
         Book book = bookService.getById(plan.getBookId());
         return new TodayPlanResponse(plan.getPlanDate(), planWords.size(),
                 plan.getCompletedCount(), currentIndex, words,
-                book.getId(), book.getName());
+                book.getId(), book.getName(), dailyGoal);
     }
 
     /**
@@ -135,15 +164,14 @@ public class LearningService {
         User user = userService.getById(userId);
         Long bookId = user.getActiveBookId() == null ? 1L : user.getActiveBookId();
         bookService.getById(bookId);
-        int goal = user.getDailyWordGoal() == null ? 20
-                : Math.max(1, Math.min(100, user.getDailyWordGoal()));
+        int goal = normalizeDailyGoal(user.getDailyWordGoal());
 
         LearningPlan plan = findTodayPlan(userId);
         if (plan == null) {
             createPlan(userId, bookId, goal);
             return;
         }
-        if ("COMPLETED".equals(plan.getStatus())) {
+        if (PLAN_STATUS_COMPLETED.equals(plan.getStatus())) {
             return;
         }
         boolean bookChanged = !Objects.equals(bookId, plan.getBookId());
@@ -169,7 +197,7 @@ public class LearningService {
         plan.setPlanDate(todayOf(userId));
         plan.setNewWordCount(picked.size());
         plan.setCompletedCount(0);
-        plan.setStatus("IN_PROGRESS");
+        plan.setStatus(PLAN_STATUS_IN_PROGRESS);
         planMapper.insert(plan);
         insertPlanWords(plan, picked);
     }
@@ -186,7 +214,7 @@ public class LearningService {
         plan.setBookId(bookId);
         plan.setNewWordCount(picked.size());
         plan.setCompletedCount(0);
-        plan.setStatus("IN_PROGRESS");
+        plan.setStatus(PLAN_STATUS_IN_PROGRESS);
         planMapper.updateById(plan);
         insertPlanWords(plan, picked);
     }
@@ -195,7 +223,7 @@ public class LearningService {
     private void adjustPlan(LearningPlan plan, Long userId, Long bookId, int goal) {
         List<LearningPlanWord> current = listPlanWords(plan.getId());
         int completed = (int) current.stream()
-                .filter(pw -> "COMPLETED".equals(pw.getStatus()))
+                .filter(pw -> STATUS_COMPLETED.equals(pw.getStatus()))
                 .count();
         if (goal > current.size()) {
             int addCount = goal - current.size();
@@ -207,20 +235,20 @@ public class LearningService {
                 pw.setUserId(userId);
                 pw.setWordId(word.getId());
                 pw.setOrderNo(order++);
-                pw.setStatus("PENDING");
+                pw.setStatus(STATUS_PENDING);
                 planWordMapper.insert(pw);
                 progressService.ensureProgress(userId, word.getId());
             }
             plan.setNewWordCount(current.size() + extra.size());
         } else if (goal < current.size()) {
             List<Long> removeIds = current.stream()
-                    .filter(pw -> pw.getOrderNo() >= goal && "PENDING".equals(pw.getStatus()))
+                    .filter(pw -> pw.getOrderNo() >= goal && STATUS_PENDING.equals(pw.getStatus()))
                     .map(LearningPlanWord::getWordId)
                     .toList();
             planWordMapper.delete(Wrappers.<LearningPlanWord>lambdaQuery()
                     .eq(LearningPlanWord::getPlanId, plan.getId())
                     .ge(LearningPlanWord::getOrderNo, goal)
-                    .eq(LearningPlanWord::getStatus, "PENDING"));
+                    .eq(LearningPlanWord::getStatus, STATUS_PENDING));
             progressService.removePlaceholderProgress(userId, removeIds);
             plan.setNewWordCount(Math.max(goal, completed));
         }
@@ -242,13 +270,73 @@ public class LearningService {
             planWord.setUserId(plan.getUserId());
             planWord.setWordId(word.getId());
             planWord.setOrderNo(order++);
-            planWord.setStatus("PENDING");
+            planWord.setStatus(STATUS_PENDING);
             planWordMapper.insert(planWord);
             progressService.ensureProgress(plan.getUserId(), word.getId());
         }
     }
 
-    /** 第一步：看英文选中文。选错则回到 PREVIEW 重新学习。 */
+    /**
+     * 追加单词到今日计划（错题本「加入今日学习」）。
+     *
+     * 规则：无今日计划则报错；已存在的单词不重复添加；追加后总数不超过每日目标，
+     * 超出部分截断；已完成（COMPLETED）的计划被追加后重新置为进行中。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TodayPlanResponse addWordsToToday(Long userId, AddWordsRequest request) {
+        LearningPlan plan = findTodayPlan(userId);
+        if (plan == null) {
+            throw new BusinessException(ResultCode.CONFLICT, "今日还没有学习计划，请先开始今日学习");
+        }
+        User user = userService.getById(userId);
+        int goal = normalizeDailyGoal(user.getDailyWordGoal());
+
+        List<LearningPlanWord> current = listPlanWords(plan.getId());
+        int completedCount = (int) current.stream()
+                .filter(pw -> STATUS_COMPLETED.equals(pw.getStatus()))
+                .count();
+        int capacity = goal - completedCount;
+        if (capacity <= 0) {
+            throw new BusinessException(ResultCode.CONFLICT,
+                    "今日目标已完成（" + completedCount + "/" + goal + "），可先调高每日目标再追加");
+        }
+
+        Set<Long> existingWordIds = current.stream()
+                .map(LearningPlanWord::getWordId)
+                .collect(Collectors.toSet());
+        List<Long> candidates = request.wordIds().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(wordId -> !existingWordIds.contains(wordId))
+                .toList();
+        if (candidates.isEmpty()) {
+            throw new BusinessException(ResultCode.CONFLICT, "所选单词已在今日计划中");
+        }
+        if (candidates.size() > capacity) {
+            candidates = candidates.subList(0, capacity);
+        }
+
+        int order = current.size();
+        for (Long wordId : candidates) {
+            // 校验存在性，避免脏数据写入计划
+            wordService.getById(wordId);
+            LearningPlanWord planWord = new LearningPlanWord();
+            planWord.setPlanId(plan.getId());
+            planWord.setUserId(userId);
+            planWord.setWordId(wordId);
+            planWord.setOrderNo(order++);
+            planWord.setStatus(STATUS_PENDING);
+            planWordMapper.insert(planWord);
+            progressService.ensureProgress(userId, wordId);
+        }
+        plan.setNewWordCount(current.size() + candidates.size());
+        if (PLAN_STATUS_COMPLETED.equals(plan.getStatus())) {
+            plan.setStatus(PLAN_STATUS_IN_PROGRESS);
+        }
+        planMapper.updateById(plan);
+        return getToday(userId);
+    }
+
     public StepResult checkZh(Long userId, CheckZhRequest request) {
         Word word = wordService.getById(request.wordId());
         boolean correct = word.getChinese().equals(request.selectedChinese());
@@ -261,7 +349,6 @@ public class LearningService {
         return new StepResult(true, "释义正确！", "CHOOSE_EN", null, null, null, false, List.of());
     }
 
-    /** 第二步：看中文选英文。选错则回到 PREVIEW，重新完成前两步。 */
     public StepResult checkEn(Long userId, CheckEnRequest request) {
         Word word = wordService.getById(request.wordId());
         boolean correct = word.getWord().equals(request.selectedWord());
@@ -275,19 +362,23 @@ public class LearningService {
     }
 
     /**
-     * 获取 AI 练习句（后续单词会自然复现已学单词）。
-     * 同一单词的练习句只生成一次，之后直接命中缓存，供前端预取加速。
+     * 获取 AI 练习句：命中缓存直接返回，未命中则生成并缓存，供前端预取加速。
      */
     public PracticeResponse getPracticeSentence(Long userId, Long wordId) {
         Word word = wordService.getById(wordId);
-        PracticeSentence cached = practiceCache.get(cacheKey(userId, wordId));
-        if (cached != null) {
-            return new PracticeResponse(cached.sentenceEn(), cached.sentenceZh());
+        String key = cacheKey(userId, wordId);
+        synchronized (practiceCache) {
+            PracticeSentence cached = practiceCache.get(key);
+            if (cached != null) {
+                return new PracticeResponse(cached.sentenceEn(), cached.sentenceZh());
+            }
         }
         List<String> previousWords = listTodayCompletedWords(userId);
         PracticeSentence sentence = aiService.generatePracticeSentence(
                 word.getWord(), word.getChinese(), previousWords);
-        practiceCache.put(cacheKey(userId, wordId), sentence);
+        synchronized (practiceCache) {
+            practiceCache.put(key, sentence);
+        }
         return new PracticeResponse(sentence.sentenceEn(), sentence.sentenceZh());
     }
 
@@ -339,7 +430,6 @@ public class LearningService {
         return new HintResponse(hint, source);
     }
 
-    /** 第三步：英译中（AI 批改）。 */
     public StepResult translateEn(Long userId, TranslateRequest request) {
         Word word = wordService.getById(request.wordId());
         PracticeSentence sentence = cachedPractice(userId, word);
@@ -364,7 +454,6 @@ public class LearningService {
                 judgement.errors());
     }
 
-    /** 第四步：中译英（AI 批改）。 */
     public StepResult translateZh(Long userId, TranslateRequest request) {
         Word word = wordService.getById(request.wordId());
         PracticeSentence sentence = cachedPractice(userId, word);
@@ -403,14 +492,14 @@ public class LearningService {
         if (planWord == null) {
             throw new BusinessException(ResultCode.NOT_FOUND, "该单词不在今日计划中");
         }
-        if (!"COMPLETED".equals(planWord.getStatus())) {
-            planWord.setStatus("COMPLETED");
+        if (!STATUS_COMPLETED.equals(planWord.getStatus())) {
+            planWord.setStatus(STATUS_COMPLETED);
             planWord.setCompletedAt(LocalDateTime.now(clock));
             planWordMapper.updateById(planWord);
 
             plan.setCompletedCount(plan.getCompletedCount() + 1);
             if (plan.getCompletedCount() >= plan.getNewWordCount()) {
-                plan.setStatus("COMPLETED");
+                plan.setStatus(PLAN_STATUS_COMPLETED);
             }
             planMapper.updateById(plan);
             progressService.markLearned(userId, request.wordId());
@@ -424,7 +513,7 @@ public class LearningService {
     @Transactional(rollbackFor = Exception.class)
     public FinishDayResponse finishDay(Long userId) {
         LearningPlan plan = findTodayPlan(userId);
-        if (plan == null || !"COMPLETED".equals(plan.getStatus())) {
+        if (plan == null || !PLAN_STATUS_COMPLETED.equals(plan.getStatus())) {
             throw new BusinessException(ResultCode.CONFLICT, "今日单词尚未全部完成");
         }
         List<LearningPlanWord> planWords = planWordMapper.selectList(
@@ -449,7 +538,7 @@ public class LearningService {
         if (result.passed()) {
             LearningPlan plan = findTodayPlan(userId);
             if (plan != null) {
-                plan.setStatus("COMPLETED");
+                plan.setStatus(PLAN_STATUS_COMPLETED);
                 planMapper.updateById(plan);
             }
         }
@@ -479,26 +568,54 @@ public class LearningService {
         return now.getHour() < boundary ? now.toLocalDate().minusDays(1) : now.toLocalDate();
     }
 
+    /**
+     * 练习句的「自然复现单词」列表：今日已完成的单词 + 薄弱单词。
+     *
+     * 答错过的单词会持续出现在后续练习句里，让用户在语境中反复输出直到掌握。
+     */
     private List<String> listTodayCompletedWords(Long userId) {
+        List<String> result = new ArrayList<>();
         LearningPlan plan = findTodayPlan(userId);
-        if (plan == null) {
-            return List.of();
+        if (plan != null) {
+            List<LearningPlanWord> completed = planWordMapper.selectList(
+                    Wrappers.<LearningPlanWord>lambdaQuery()
+                            .eq(LearningPlanWord::getPlanId, plan.getId())
+                            .eq(LearningPlanWord::getStatus, STATUS_COMPLETED)
+                            .orderByAsc(LearningPlanWord::getOrderNo));
+            completed.stream()
+                    .map(pw -> wordService.getById(pw.getWordId()).getWord())
+                    .forEach(result::add);
         }
-        List<LearningPlanWord> completed = planWordMapper.selectList(
-                Wrappers.<LearningPlanWord>lambdaQuery()
-                        .eq(LearningPlanWord::getPlanId, plan.getId())
-                        .eq(LearningPlanWord::getStatus, "COMPLETED")
-                        .orderByAsc(LearningPlanWord::getOrderNo));
-        return completed.stream().map(pw -> wordService.getById(pw.getWordId()).getWord()).toList();
+        int weakQuota = Math.max(0, PRACTICE_REVIEW_WORDS - result.size());
+        if (weakQuota > 0) {
+            progressService.listWeakWordIds(userId, weakQuota).stream()
+                    .map(wordId -> wordService.getById(wordId).getWord())
+                    .filter(word -> !result.contains(word))
+                    .forEach(result::add);
+        }
+        return result;
     }
 
-    private PracticeSentence cachedPractice(Long userId, Word word) {
-        PracticeSentence sentence = practiceCache.get(cacheKey(userId, word.getId()));
-        if (sentence == null) {
-            sentence = new PracticeSentence(word.getExampleEn(), word.getExampleZh());
-            practiceCache.put(cacheKey(userId, word.getId()), sentence);
+    /** 每日目标归一化：空值取默认值，并收敛到合法区间。 */
+    private int normalizeDailyGoal(Integer dailyWordGoal) {
+        if (dailyWordGoal == null) {
+            return DEFAULT_DAILY_GOAL;
         }
-        return sentence;
+        return Math.max(MIN_DAILY_GOAL, Math.min(MAX_DAILY_GOAL, dailyWordGoal));
+    }
+
+    /** 读取练习句：命中缓存直接返回，未命中则用词典例句兜底并写入缓存。 */
+    private PracticeSentence cachedPractice(Long userId, Word word) {
+        String key = cacheKey(userId, word.getId());
+        synchronized (practiceCache) {
+            PracticeSentence cached = practiceCache.get(key);
+            if (cached != null) {
+                return cached;
+            }
+            PracticeSentence sentence = new PracticeSentence(word.getExampleEn(), word.getExampleZh());
+            practiceCache.put(key, sentence);
+            return sentence;
+        }
     }
 
     private String cacheKey(Long userId, Long wordId) {

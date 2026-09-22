@@ -17,9 +17,6 @@ import java.util.List;
 
 /**
  * 词书接口。
- *
- * 模块职责：
- *   - 词书列表、用户选择词书。
  */
 @Tag(name = "词书")
 @RestController
@@ -29,7 +26,7 @@ public class BookController {
 
     private final BookService bookService;
 
-    @Operation(summary = "词书列表（含当前选中标记）")
+    @Operation(summary = "词书列表（含当前选中标记与每本书的学习进度）")
     @GetMapping
     public Result<List<BookVO>> list() {
         return Result.ok(bookService.listBooks(UserContext.getUserId()));
@@ -40,5 +37,11 @@ public class BookController {
     public Result<Void> select(@PathVariable Long id) {
         bookService.selectBook(UserContext.getUserId(), id);
         return Result.ok(null);
+    }
+
+    @Operation(summary = "重新背诵该词书（清空本书进度，其他词书进度不受影响）")
+    @PostMapping("/{id}/restart")
+    public Result<List<BookVO>> restart(@PathVariable Long id) {
+        return Result.ok(bookService.restartBook(UserContext.getUserId(), id));
     }
 }

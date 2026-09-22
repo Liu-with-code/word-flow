@@ -2,12 +2,18 @@ package com.wordflow.module.learning.dto;
 
 import com.wordflow.module.ai.AiModels.ErrorItem;
 import com.wordflow.module.word.dto.WordVO;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.List;
 
 /**
  * 学习模块数据传输对象集合。
+ *
+ * 入参对象由 Controller 层的 {@code @Valid} 触发校验，Service 层不再重复判空。
  */
 public final class LearningDtos {
 
@@ -22,7 +28,8 @@ public final class LearningDtos {
             int currentIndex,
             List<WordVO> words,
             Long bookId,
-            String bookName
+            String bookName,
+            int dailyWordGoal
     ) {
     }
 
@@ -31,23 +38,43 @@ public final class LearningDtos {
     }
 
     /** 第一步：看英文选中文释义 */
-    public record CheckZhRequest(Long wordId, String selectedChinese) {
+    public record CheckZhRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId,
+            @NotBlank(message = "所选释义不能为空") String selectedChinese
+    ) {
     }
 
     /** 第二步：看中文选英文单词 */
-    public record CheckEnRequest(Long wordId, String selectedWord) {
+    public record CheckEnRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId,
+            @NotBlank(message = "所选单词不能为空") String selectedWord
+    ) {
     }
 
     /** 中英互译提交 */
-    public record TranslateRequest(Long wordId, String sentence, String userTranslation) {
+    public record TranslateRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId,
+            @NotBlank(message = "原句不能为空") String sentence,
+            @NotBlank(message = "译文不能为空")
+            @Size(max = 4000, message = "译文最长 4000 字符") String userTranslation
+    ) {
     }
 
     /** 流式中英互译提交（direction: en2zh / zh2en） */
-    public record TranslateStreamRequest(Long wordId, String sentence, String userTranslation, String direction) {
+    public record TranslateStreamRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId,
+            @NotBlank(message = "原句不能为空") String sentence,
+            @NotBlank(message = "译文不能为空")
+            @Size(max = 4000, message = "译文最长 4000 字符") String userTranslation,
+            @NotBlank(message = "翻译方向不能为空") String direction
+    ) {
     }
 
     /** “我不会”参考译文请求 */
-    public record TranslateHintRequest(Long wordId, String direction) {
+    public record TranslateHintRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId,
+            @NotBlank(message = "翻译方向不能为空") String direction
+    ) {
     }
 
     /** “我不会”参考译文响应 */
@@ -68,7 +95,17 @@ public final class LearningDtos {
     }
 
     /** 标记单词完成 */
-    public record CompleteWordRequest(Long wordId) {
+    public record CompleteWordRequest(
+            @NotNull(message = "单词 ID 不能为空") Long wordId
+    ) {
+    }
+
+    /** 追加单词到今日计划（错题本「加入今日学习」） */
+    public record AddWordsRequest(
+            @NotEmpty(message = "请至少选择一个单词")
+            @Size(max = 50, message = "单次最多追加 50 个单词")
+            List<Long> wordIds
+    ) {
     }
 
     /** 今日单词全部学完，AI 生成总结短文 */

@@ -15,17 +15,17 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    options: string[]
-    disabled?: boolean
+    options: string[];
+    disabled?: boolean;
   }>(),
   {
     disabled: false,
   },
-)
+);
 
 const emit = defineEmits<{
-  (event: 'select', option: string): void
-}>()
+  (event: 'select', option: string): void;
+}>();
 </script>
 
 <style scoped>
@@ -66,4 +66,3 @@ const emit = defineEmits<{
   }
 }
 </style>
-

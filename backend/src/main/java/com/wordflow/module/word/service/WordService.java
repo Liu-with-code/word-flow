@@ -17,9 +17,6 @@ import java.util.List;
 
 /**
  * 单词服务。
- *
- * 模块职责：
- *   - 词库分页查询、按 ID 查询、抽取今日未学单词。
  */
 @Service
 @RequiredArgsConstructor

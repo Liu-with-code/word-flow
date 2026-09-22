@@ -7,9 +7,6 @@ import java.util.List;
 
 /**
  * 分页响应体。
- *
- * 模块职责：
- *   - 包装 MyBatis-Plus 的分页结果，统一结构 { list, total, page, size }。
  */
 @Data
 public class PageResult<T> {

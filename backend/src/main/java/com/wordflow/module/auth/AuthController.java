@@ -19,9 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 认证接口：注册 / 登录。
- *
- * 模块职责：
- *   - 注册成功后直接签发 JWT，登录成功后返回 JWT 与用户信息。
  */
 @Tag(name = "认证")
 @RestController

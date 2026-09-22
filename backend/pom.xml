@@ -19,9 +19,18 @@
 
     <properties>
         <java.version>17</java.version>
+        <!--
+            显式声明源码编码（父 POM 已默认 UTF-8，这里重复声明以保证独立性与可读性）。
+            提示：<sourceEncoding> 定义在 maven-pmd-plugin 的父 Mojo 上，
+            IDEA 的 DOM 检查只索引 goal 自身参数，可能对其误报红，不影响构建。
+        -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.6.0</springdoc.version>
+        <!-- 阿里规约静态检查：PMD 插件 -->
+        <maven-pmd-plugin.version>3.21.2</maven-pmd-plugin.version>
+        <p3c-pmd.version>2.1.1</p3c-pmd.version>
     </properties>
 
     <dependencies>
@@ -118,6 +127,52 @@
                     <!-- 限制测试 JVM 内存，避免本机内存压力导致 fork 失败 -->
                     <argLine>-Xmx512m</argLine>
                 </configuration>
+            </plugin>
+
+            <!--
+                阿里规约静态检查：《阿里巴巴Java开发手册》官方 PMD 实现（p3c-pmd）。
+                规则集见 backend/p3c-ruleset.xml；绑定 verify 阶段，执行 mvn verify / mvn pmd:check
+                即触发卡口，violation 会导致构建失败。Dockerfile 只执行 package 阶段，不受影响。
+
+                关于 IDE 报红：<sourceEncoding> 与 <targetJdk> 都定义在插件的父 Mojo 上，
+                Maven 运行时会正确继承并生效（已实测 clean verify 通过），
+                但 IDEA 的 DOM 检查只索引 goal 自身参数，因此可能对二者显示红色，属误报。
+                其中 sourceEncoding 已按 Maven 官方推荐写法改为字面量，减少一处误报。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>${maven-pmd-plugin.version}</version>
+                <configuration>
+                    <sourceEncoding>UTF-8</sourceEncoding>
+                    <targetJdk>17</targetJdk>
+                    <printFailingErrors>true</printFailingErrors>
+                    <failOnViolation>true</failOnViolation>
+                    <linkXRef>false</linkXRef>
+                    <rulesets>
+                        <ruleset>${project.basedir}/p3c-ruleset.xml</ruleset>
+                    </rulesets>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>p3c-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <!--
+                    p3c-pmd 以「插件依赖」方式引入：它只服务 PMD 静态检查，
+                    不进入业务运行期依赖，避免污染 spring-boot 打包结果。
+                -->
+                <dependencies>
+                    <dependency>
+                        <groupId>com.alibaba.p3c</groupId>
+                        <artifactId>p3c-pmd</artifactId>
+                        <version>${p3c-pmd.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

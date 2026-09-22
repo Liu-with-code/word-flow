@@ -1,5 +1,9 @@
 package com.wordflow.module.article.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 /**
@@ -11,7 +15,11 @@ public final class ArticleDtos {
     }
 
     /** 短文翻译提交 */
-    public record ArticleCheckRequest(Long articleId, String userTranslation) {
+    public record ArticleCheckRequest(
+            @NotNull(message = "短文 ID 不能为空") Long articleId,
+            @NotBlank(message = "译文不能为空")
+            @Size(max = 20000, message = "译文最长 20000 字符") String userTranslation
+    ) {
     }
 
     /** 短文批改结果 */
@@ -29,4 +37,3 @@ public final class ArticleDtos {
     public record ErrorItem(String segment, String expected, String user, String suggestion) {
     }
 }
-

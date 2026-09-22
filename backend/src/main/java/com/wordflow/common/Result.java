@@ -4,9 +4,6 @@ import lombok.Data;
 
 /**
  * 统一响应包装体。
- *
- * 模块职责：
- *   - 所有 REST 接口统一返回 { code, message, data }，方便前端统一处理。
  */
 @Data
 public class Result<T> {

@@ -11,9 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * 词书实体，对应表 learn_book。
- *
- * 模块职责：
- *   - 词书元数据：名称、编码、级别、简介、封面色、词数、排序。
  */
 @Data
 @TableName("learn_book")

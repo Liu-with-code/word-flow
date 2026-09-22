@@ -3,14 +3,14 @@
     <div class="code">404</div>
     <h1>页面不存在</h1>
     <p>你访问的页面可能已被移动或删除。</p>
-    <el-button type="primary" @click="router.push('/')">返回首页</el-button>
+    <el-button type="primary" @click="router.push('/')"> 返回首页 </el-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from 'vue-router';
 
-const router = useRouter()
+const router = useRouter();
 </script>
 
 <style scoped>
