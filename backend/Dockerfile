@@ -20,7 +20,7 @@ WORKDIR /app
 ENV TZ=Asia/Shanghai \
     JAVA_TOOL_OPTIONS="-Xms256m -Xmx512m"
 
-COPY --from=build /workspace/target/wordflow-backend-0.1.0.jar app.jar
+COPY --from=build /workspace/target/wordflow-backend-0.2.0.jar app.jar
 
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

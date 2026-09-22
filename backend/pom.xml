@@ -13,7 +13,7 @@
 
     <groupId>com.wordflow</groupId>
     <artifactId>wordflow-backend</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
     <name>wordflow-backend</name>
     <description>WordFlow 词流 - 输出倒逼输入的背单词系统（后端）</description>
 
