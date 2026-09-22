@@ -38,7 +38,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-wordflow}
       JWT_SECRET: ${JWT_SECRET:-wordflow-dev-secret-change-me-0123456789abcdef}
       JWT_EXPIRE_HOURS: ${JWT_EXPIRE_HOURS:-168}
-      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-https://api.deepseek.com}
       AI_MODEL: ${AI_MODEL:-deepseek-v4-flash}

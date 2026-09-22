@@ -54,7 +54,8 @@
 
 ### GET /books
 
-词书列表，`active` 标记当前用户选中的词书。
+词书列表，包含当前选中标记与**每本书的学习进度**（进度按「账号 + 单词」维度统计，
+与当前选中词书无关，因此切换词书不会清空任何一本书的进度）。
 
 ```json
 // 响应 data 示例
@@ -66,16 +67,42 @@
     "level": "四级",
     "description": "大学英语四级核心词汇…",
     "coverColor": "#6366f1",
-    "wordCount": 7508,
+    "wordCount": 4544,
     "sortNo": 10,
-    "active": true
+    "active": true,
+    "learnedCount": 1136,
+    "masteredCount": 0,
+    "remainingCount": 3408,
+    "progressPercent": 25
   }
 ]
 ```
 
+| 字段 | 含义 |
+| --- | --- |
+| `learnedCount` | 已开始学习的单词数（进入过四步练习） |
+| `masteredCount` | 已掌握（通过全部艾宾浩斯复习轮次，status=COMPLETE）的单词数 |
+| `remainingCount` | 尚未学习的单词数（`wordCount - learnedCount`，不小于 0） |
+| `progressPercent` | 学习进度百分比 0-100（`learnedCount / wordCount` 四舍五入） |
+
 ### POST /books/{id}/select
 
 将 `{id}` 词书设为当前词书（写入 `sys_user.active_book_id`）。
+只切换「当前使用」的词书，不影响任何一本书的进度。
+
+### POST /books/{id}/restart
+
+重新背诵该词书：清空当前账号在本书的学习进度，使其重新可学。
+
+业务规则：
+
+- 仅清除该词书的 `learn_progress` 进度行，以及今日「进行中」计划中属于该词书的明细；
+- 若清理后今日计划已无任何单词，则一并删除该计划，下次「开始今日学习」按新进度重新抽词；
+- **其他词书的进度不受影响**；已完成的计划视为历史记录保留；
+- 出于数据安全，作答流水（`learn_record`）与已生成短文（`learn_article`）保留，仅重置进度；
+- 返回重置后的完整词书列表（结构同 `GET /books`），前端可直接刷新进度条。
+
+典型用途：一本词书学完后，点击「重新背诵」重新学习该书，避免「背完一次无法再背」。
 
 ## 词库 Words
 
@@ -101,7 +128,8 @@
 | GET | /learning/today | 今日计划与当前单词 |
 | POST | /learning/start | 开始/继续今日学习（幂等，从当前词书抽词） |
 | POST | /learning/reconcile | 协调今日计划：检测词书/每日目标变更并同步更新 |
-| GET | /learning/practice/{wordId} | 获取 AI 练习句（包含已学单词） |
+| POST | /learning/add-words | 追加单词到今日计划（错题本「加入今日学习」），请求体 `{ "wordIds": [1, 2] }` |
+| GET | /learning/practice/{wordId} | 获取 AI 练习句（包含已学单词与薄弱单词） |
 | POST | /learning/check-zh | 看英文选中文释义 |
 | POST | /learning/check-en | 看中文选英文单词 |
 | POST | /learning/translate-en | 英译中（AI 批改） |
@@ -117,9 +145,17 @@
 ```json
 {
   "bookId": 1,
-  "bookName": "四级核心词汇"
+  "bookName": "四级核心词汇",
+  "dailyWordGoal": 20
 }
 ```
+
+`/learning/add-words` 业务规则：
+
+- 无今日计划时返回 `code=409`，提示先开始今日学习；
+- 已完成的单词去重；计划中已存在的单词不重复添加；
+- 追加后总数不超过 `daily_word_goal`，超出部分自动截断；
+- 已完成（COMPLETED）的计划被追加单词后会重新置为 IN_PROGRESS。
 
 ### 流式批改 /translate-stream
 
@@ -197,10 +233,34 @@ data: {"type":"done","payload":{ "correct": false, "message": "…", "nextStep":
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | GET | /review/overview | 待复习数量 |
+| GET | /review/warmup | 复习热身：到期单词快速自测卡片（按紧急度排序，最多 20 个） |
+| POST | /review/warmup | 热身作答：`{ "wordId": 1, "remembered": true }`，记得则推进复习阶段 |
 | POST | /review/start | 按遗忘曲线生成复习短文 |
 | POST | /review/check | 批改复习短文 |
 | GET | /review/night-prompt | 夜间学习智能弹窗：`{ "show": true, "date": "2026-08-23", "count": 3 }` |
 | POST | /review/night-prompt | 答复弹窗：`{ "apply": true }`（true=提前加入今日复习，false=保持默认） |
+
+`GET /review/warmup` 响应 `data`：
+
+```json
+{
+  "dueCount": 12,
+  "total": 12,
+  "markedCount": 0,
+  "words": [
+    {
+      "word": { "id": 1, "word": "abandon", "phonetic": "/əˈbændən/", "chinese": "放弃；抛弃" },
+      "stage": 2,
+      "lastReviewAt": "2026-09-20T00:00",
+      "priority": 4,
+      "marked": false
+    }
+  ]
+}
+```
+
+`POST /review/warmup` 响应 `data`：`{ "remembered": true, "stage": 3, "status": "REVIEWING", "remaining": 11 }`；
+作答流水会写入 `learn_record`（`session_type=REVIEW`、`step_type=REVIEW_WARMUP`）。
 
 `/review/start` 每次最多生成的文章词数受 `sys_user.daily_review_goal`（每日复习目标）限制。
 
@@ -226,3 +286,59 @@ data: {"type":"done","payload":{ "correct": false, "message": "…", "nextStep":
 | GET | /stats/dashboard | 已学/掌握/待复习/今日进度/连续天数/正确率 |
 | GET | /stats/weekly | 近 7 天作答量 |
 | GET | /stats/recent?limit=10 | 最近作答记录 |
+| GET | /stats/stage-distribution | 记忆阶段分布（艾宾浩斯各阶段单词数量） |
+| GET | /stats/review-forecast?days=14 | 未来复习量预测（按用户学习日统计每日到期数，days 上限 60） |
+| GET | /stats/weak-words?onlyWrong=true&limit=6 | 薄弱单词概览（答错次数最多） |
+| GET | /stats/weak-words/page?page=1&size=10 | 错题本分页查询（size 上限 50） |
+
+`GET /stats/stage-distribution` 响应 `data`：
+
+```json
+{
+  "total": 72,
+  "complete": 3,
+  "reviewing": 40,
+  "mastered": 25,
+  "learning": 4,
+  "buckets": [
+    { "label": "学习中", "stage": 0, "count": 4, "description": "尚未完成今日四步练习" },
+    { "label": "第 1 轮", "stage": 1, "count": 25, "description": "1 天后复习" },
+    { "label": "长期记忆", "stage": 7, "count": 3, "description": "已通过全部复习" }
+  ]
+}
+```
+
+`GET /stats/review-forecast` 响应 `data`：
+
+```json
+{
+  "days": 14,
+  "overdueCount": 5,
+  "totalPlanned": 37,
+  "points": [ { "date": "2026-09-21", "count": 4 } ]
+}
+```
+
+- `overdueCount`：已逾期（下次复习日早于今日）的单词数，单独统计，不重复计入 `points`；
+- `totalPlanned`：窗口内将到期的单词总数；统计口径为用户时区的自然日。
+
+`GET /stats/weak-words/page` 响应 `data`（分页结构）：
+
+```json
+{
+  "list": [
+    {
+      "word": { "id": 1, "word": "abandon", "phonetic": "/əˈbændən/", "chinese": "放弃；抛弃" },
+      "wrongCount": 3,
+      "correctCount": 1,
+      "accuracy": 25,
+      "stage": 1,
+      "status": "MASTERED",
+      "lastLearnedAt": "2026-09-20 10:00:00"
+    }
+  ],
+  "total": 18,
+  "page": 1,
+  "size": 10
+}
+```

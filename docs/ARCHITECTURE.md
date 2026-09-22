@@ -40,17 +40,25 @@ flowchart LR
 | 模块 | 职责 | 扩展方向 |
 | --- | --- | --- |
 | `common` | 统一响应、错误码、全局异常、分页 | 一般无需改；可扩展业务错误码 |
-| `config` | CORS、MyBatis-Plus、OpenAPI、字段自动填充 | 生产环境收紧 CORS 白名单、关闭 Swagger |
+| `config` | CORS、MyBatis-Plus、OpenAPI、字段自动填充、业务线程池 | 生产环境收紧 CORS 白名单、关闭 Swagger |
 | `security` | JWT 生成/校验、拦截器、用户上下文 | 增加角色权限时可在此扩展 |
 | `module/user` `module/auth` | 注册、登录、个人资料 | 头像上传、修改密码、第三方登录 |
 | `module/book` | 词书列表、用户选择当前词书 | 词书封面图、收藏/订阅、管理端维护 |
 | `module/word` | 词库分页查询、按词书抽词 | 更精细的选词策略（词频/考纲优先级） |
-| `module/progress` | 用户单词进度、作答流水、艾宾浩斯调度 | 个性化复习间隔参数 |
-| `module/learning` | 今日学习状态机、AI 练习句、总结短文 | 断点续学到“步骤”级、错题再练 |
+| `module/progress` | 用户单词进度、作答流水、艾宾浩斯调度、薄弱单词查询 | 个性化复习间隔参数 |
+| `module/learning` | 今日学习状态机、AI 练习句、总结短文、错题追加 | 断点续学到“步骤”级、错题再练 |
 | `module/article` | AI 短文生成与批改、尝试记录 | 文章缓存与去重 |
-| `module/review` | 到期单词筛选、紧急度、复习文章批改 | 基于历史正确率的个性化词频 |
-| `module/statistics` | 仪表盘、近 7 天、最近作答 | 留存率、准时复习率报表 |
+| `module/review` | 到期单词筛选、紧急度、复习热身自测、复习文章批改 | 基于历史正确率的个性化词频 |
+| `module/statistics` | 仪表盘、近 7 天、最近作答、阶段分布、复习预测、错题本 | 留存率、准时复习率报表 |
 | `module/ai` | 大模型策略（mock / openai）、调用日志 | 接入公司网关、限流熔断重试 |
+
+### 3.1 并发与缓存约定
+
+- AI 批改属长耗时任务：SSE 流式接口由 `config/AsyncConfig#aiTaskExecutor` 独立线程池承载
+  （有界队列 + CallerRunsPolicy 背压），不占用公共 ForkJoinPool；
+- 练习句缓存为有界 LRU（容量 512），单机内存可控；多实例部署时应替换为 Redis；
+- 所有写接口在 Controller 层用 `@Valid` 完成入参校验，Service 只处理业务规则。
+
 
 词书数据流：
 
@@ -122,11 +130,34 @@ frontend/src/
 ├── api/          # 网络层：request 封装 + 各业务域接口（可移植）
 ├── stores/       # Pinia 状态（可移植）
 ├── types/        # 与后端一致的模型定义（可移植）
+├── utils/        # 会话存储收口（auth）、时区采集、每日金句
 ├── router/       # 路由与登录守卫
 ├── layouts/      # 主布局（桌面侧栏 / 移动底部导航）
-├── components/   # 通用组件：WordCard / ChoiceGrid / TranslationPanel 等
-├── views/        # 页面：首页/学习/复习/词库/统计/设置
+├── components/   # 通用组件：WordCard / ChoiceGrid / TranslationPanel / StageBarChart 等
+├── views/        # 页面：首页/学习/复习/词书/错题本/统计/设置
 └── styles/       # 设计变量与全局样式
 ```
 
-移植到小程序 / Android 时：`api`、`stores`、`types` 可整体复用，仅需重写 `views` 与 `components`。
+工程卡口：`eslint.config.mjs`（eslint-config-ali + eslint-plugin-vue）与 `prettier-config-ali`
+约束编码风格，命令见 `npm run check`。
+
+移植到小程序 / Android 时：`api`、`stores`、`types`、`utils` 可整体复用，仅需重写 `views` 与 `components`。
+
+## 7. 复习流程（含热身自测）
+
+```mermaid
+flowchart LR
+    A[进入复习页] --> B[获取到期单词]
+    B --> C{是否先热身自测}
+    C -- 记得 --> D[推进艾宾浩斯阶段]
+    C -- 不熟 --> E[保留在复习队列]
+    D --> F{是否还有到期单词}
+    E --> F
+    F -- 有 --> G[按紧急度生成复习短文]
+    G --> H[全文翻译批改 >=60]
+    H -- 通过 --> I[推进所有单词阶段]
+    F -- 无 --> J[今日复习完成]
+```
+
+热身自测的意义：先用低成本回忆筛掉已掌握的单词，只为真正不熟的词生成短文与翻译练习，
+在保证记忆效果的前提下减少无效输出量。

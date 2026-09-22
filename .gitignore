@@ -33,3 +33,11 @@ application-local.yml
 # 服务器专用部署文件（不进公开仓库，服务器本地保留）
 docker-compose.server.yml
 docs/DEPLOY-SERVER.md
+
+# 本机构建辅助文件（含绝对路径，仅本地使用）
+backend/settings-workspace.xml
+
+# 迁移期权限探测残留文件（无法删除时忽略，不影响构建）
+__probe_write.txt
+**/__probe_write.txt
+.__probe_write.txt

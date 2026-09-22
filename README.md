@@ -97,18 +97,73 @@ npm run dev
 
 ## AI 配置
 
-默认 `ai.provider=mock`，无需任何 Key，可完整离线体验（批改为规则算法，句子/短文为模板生成）。
-
-接入真实大模型（以 OpenAI 兼容接口为例）：
+默认接真实大模型（OpenAI 兼容接口，见 `backend/src/main/resources/application.yml`）：
 
 ```yaml
 ai:
-  provider: openai
-  base-url: https://api.openai.com/v1   # 也可换成 DeepSeek / 通义千问等
-  model: gpt-4o-mini
+  provider: ${AI_PROVIDER:openai}
+  base-url: ${AI_BASE_URL:https://api.deepseek.com}   # 也可换成 OpenAI / 通义千问等
+  model: ${AI_MODEL:deepseek-v4-flash}
 ```
 
-并在启动后端前设置环境变量：`AI_API_KEY=sk-xxxx`。
+启动前设置密钥环境变量：`AI_API_KEY=sk-xxxx`（不要写进代码或提交到仓库）。
+
+如需离线开发（批改为规则算法、句子与短文为模板生成），把 provider 切回模拟实现：
+
+```bash
+AI_PROVIDER=mock mvn spring-boot:run
+```
+
+## 开发规范与质量卡口
+
+本项目按《阿里巴巴Java开发手册（嵩山版）》与《阿里巴巴前端规约 F2E-Spec》落地，并提供可执行的检查命令。
+
+### 后端（p3c-pmd）
+
+```bash
+cd backend
+mvn verify          # 含阿里规约静态检查，违规会导致构建失败
+mvn pmd:check       # 只跑规约检查
+```
+
+- 规则集：`backend/p3c-ruleset.xml`，引用官方 `com.alibaba.p3c:p3c-pmd` 的 10 个 `ali-*.xml`；
+- 当前裁剪（详见规则集内注释）：排除 `ClassMustHaveAuthorRule`（作者信息以 Git 记录为准）
+  与 `ServiceOrDaoClassShouldEndWithImplRule`（AI 服务为策略模式的条件装配实现，
+  类名体现 provider 更利于排查）；
+- 卡口绑定 `verify` 阶段，Docker 构建只执行 `package`，不受影响；
+- 当前状态：**63 个单元测试通过、0 条规约违规、构建成功**。
+
+### 前端（ESLint + Prettier）
+
+```bash
+cd frontend
+npm run lint         # ESLint（eslint-config-ali + typescript-eslint + eslint-plugin-vue）
+npm run format:check # Prettier（prettier-config-ali）检查
+npm run format       # 自动格式化
+npm run check        # lint + format:check + build 全量校验
+```
+
+> 首次执行前需在 `frontend/` 下运行 `npm install`，以安装上述 lint 依赖并更新 `package-lock.json`。
+
+职责划分：**格式化统一由 Prettier 负责**，ESLint 只保留语义与最佳实践规则；
+模板格式类规则（`vue/max-attributes-per-line` 等）在 `eslint.config.mjs` 中关闭，
+避免 ESLint 与 Prettier 互相覆盖。当前状态：**lint 0 错误 0 警告、格式检查通过、构建成功**。
+
+### 本机环境注意事项
+
+- 后端构建依赖 Maven 本地仓库。若默认仓库位于工作区之外且无权写入，
+  可用仓库内附带的设置文件把本地仓库重定向到工作区内：
+
+  ```bash
+  cd backend
+  mvn -s settings-workspace.xml verify
+  ```
+
+  该文件（`backend/settings-workspace.xml`）含本机绝对路径，已加入 `.gitignore`，仅本地使用；
+- `wordflow` 目录若由其他账号创建，需确保当前用户对其拥有「修改」权限（NTFS ACL），
+  否则 `mvn`/`npm` 无法写入 `target/` 与 `node_modules/`；目录上的 Modify 授权不能带
+  `inherit-only` 标记，否则对目录自身无效。
+
 
 ## 核心流程
 
@@ -116,6 +171,13 @@ ai:
 
 用户先进入「词书」页选择一本当前词书（默认四级），「今日学习」开始时从该词书
 中抽取未学单词。当天已经开始的学习计划不受换书影响，次日生效。
+
+每本词书卡片上都有**独立的学习进度条**（已学 / 已掌握 / 剩余 / 百分比）：
+
+- 进度按「账号 + 单词」维度统计，与「当前选中词书」无关，**切换词书不会清空任何一本书的进度**，
+  8 本书的进度同时可见、实时保留；
+- 一本词书学完后，可用卡片上的**「重新背诵」**按钮清空该书进度重新学习；
+  该操作只影响本书，其他词书进度、历史作答记录与已生成短文都会保留。
 
 ```mermaid
 flowchart LR
@@ -134,7 +196,22 @@ flowchart LR
     H -- 低于 60% --> G
 ```
 
-复习模块：到期单词按紧急度排序 → AI 生成复习短文（词频严格按遗忘曲线）→ 全文翻译批改 → 通过后推进所有单词的复习阶段。
+复习模块：到期单词按紧急度排序 → 可先做「热身自测」（记得的词直接推进复习阶段）→ AI 生成复习短文（词频严格按遗忘曲线）→ 全文翻译批改 → 通过后推进所有单词的复习阶段。
+
+### 错题本与薄弱单词
+
+- 「错题本」页（`/mistakes`）分页列出答错过的单词，支持多选后一键「加入今日学习」；
+- 加入今日学习的单词会进入当日四步练习流程，并同步创建进度行，纳入艾宾浩斯调度；
+- AI 练习句会自动复现薄弱单词（最多 5 个），让易错词在真实语境中反复「输出」；
+- 统计页展示「最容易出错的单词」与错题入口。
+
+### 统计可视化
+
+统计页在原有仪表盘基础上新增：
+
+- **记忆阶段分布**：按艾宾浩斯 0-6 阶段与长期记忆聚合单词数量（纯 CSS 条形图，无额外图表依赖）；
+- **未来 14 天复习量预测**：按用户学习日的自然日统计每日到期单词数，并单独显示已逾期数量；
+- **薄弱单词概览**：答错次数最多的单词与正确率。
 
 ## 文档索引
 
